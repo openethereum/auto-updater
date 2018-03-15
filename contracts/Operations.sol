@@ -105,15 +105,15 @@ contract Operations is OperationsFace {
 
 	function Operations() public {
 		// Mainnet
-		// fork[0] = Fork("frontier", sha3("frontier"), true, true, 0);
-		// fork[1150000] = Fork("homestead", sha3("homestead"), true, true, 0);
-		// fork[2463000] = Fork("eip150", sha3("eip150"), true, true, 0);
-		// fork[2675000] = Fork("eip155", sha3("eip155"), true, true, 0);
+		// fork[0] = Fork("frontier", keccak256("frontier"), true, true, 0);
+		// fork[1150000] = Fork("homestead", keccak256("homestead"), true, true, 0);
+		// fork[2463000] = Fork("eip150", keccak256("eip150"), true, true, 0);
+		// fork[2675000] = Fork("eip155", keccak256("eip155"), true, true, 0);
 		// latestFork = 2675000;
 
 		// Ropsten
-		fork[0] = Fork("eip150", sha3("eip150"), true, true, 0);
-		fork[10] = Fork("eip155", sha3("eip155"), true, true, 0);
+		fork[0] = Fork("eip150", keccak256("eip150"), true, true, 0);
+		fork[10] = Fork("eip155", keccak256("eip155"), true, true, 0);
 		latestFork = 10;
 
 		client["parity"] = Client(msg.sender, true);
