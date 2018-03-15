@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pragma solidity ^0.4.7;
+pragma solidity ^0.4.19;
 
 contract OperationsFace {
 	function proposeTransaction(bytes32 _txid, address _to, bytes _data, uint _value, uint _gas) public returns (uint txSuccess);
