@@ -27,12 +27,12 @@ contract OperationsFace {
 	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public;
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public;
 
-	function isLatest(bytes32 _client, bytes32 _release) public constant returns (bool);
-	function track(bytes32 _client, bytes32 _release) public constant returns (uint8);
-	function latestInTrack(bytes32 _client, uint8 _track) public constant returns (bytes32);
-	function build(bytes32 _client, bytes32 _checksum) public constant returns (bytes32 o_release, bytes32 o_platform);
-	function release(bytes32 _client, bytes32 _release) public constant returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical);
-	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public constant returns (bytes32);
+	function isLatest(bytes32 _client, bytes32 _release) public view returns (bool);
+	function track(bytes32 _client, bytes32 _release) public view returns (uint8);
+	function latestInTrack(bytes32 _client, uint8 _track) public view returns (bytes32);
+	function build(bytes32 _client, bytes32 _checksum) public view returns (bytes32 o_release, bytes32 o_platform);
+	function release(bytes32 _client, bytes32 _release) public view returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical);
+	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public view returns (bytes32);
 }
 
 contract Operations is OperationsFace {
@@ -225,25 +225,25 @@ contract Operations is OperationsFace {
 
 	// Getters
 
-	function isLatest(bytes32 _client, bytes32 _release) public constant returns (bool) {
+	function isLatest(bytes32 _client, bytes32 _release) public view returns (bool) {
 		return latestInTrack(_client, track(_client, _release)) == _release;
 	}
 
-	function track(bytes32 _client, bytes32 _release) public constant returns (uint8) {
+	function track(bytes32 _client, bytes32 _release) public view returns (uint8) {
 		return client[_client].release[_release].track;
 	}
 
-	function latestInTrack(bytes32 _client, uint8 _track) public constant returns (bytes32) {
+	function latestInTrack(bytes32 _client, uint8 _track) public view returns (bytes32) {
 		return client[_client].current[_track];
 	}
 
-	function build(bytes32 _client, bytes32 _checksum) public constant returns (bytes32 o_release, bytes32 o_platform) {
+	function build(bytes32 _client, bytes32 _checksum) public view returns (bytes32 o_release, bytes32 o_platform) {
 		var b = client[_client].build[_checksum];
 		o_release = b.release;
 		o_platform = b.platform;
 	}
 
-	function release(bytes32 _client, bytes32 _release) public constant returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical) {
+	function release(bytes32 _client, bytes32 _release) public view returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical) {
 		var b = client[_client].release[_release];
 		o_forkBlock = b.forkBlock;
 		o_track = b.track;
@@ -251,7 +251,7 @@ contract Operations is OperationsFace {
 		o_critical = b.critical;
 	}
 
-	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public constant returns (bytes32) {
+	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public view returns (bytes32) {
 		return client[_client].release[_release].checksum[_platform];
 	}
 
