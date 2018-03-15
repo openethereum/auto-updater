@@ -59,20 +59,7 @@ contract SimpleOperations is Operations {
 		mapping (bytes32 => Status) status;
 	}
 
-	struct Transaction {
-		uint requiredCount;
-		mapping (bytes32 => Status) status;
-		address to;
-		bytes data;
-		uint value;
-		uint gas;
-	}
-
 	event Received(address indexed from, uint value, bytes data);
-	event TransactionProposed(bytes32 indexed client, bytes32 indexed txid, address indexed to, bytes data, uint value, uint gas);
-	event TransactionConfirmed(bytes32 indexed client, bytes32 indexed txid);
-	event TransactionRejected(bytes32 indexed client, bytes32 indexed txid);
-	event TransactionRelayed(bytes32 indexed txid, bool success);
 	event ForkProposed(bytes32 indexed client, uint32 indexed number, bytes32 indexed name, bytes32 spec, bool hard);
 	event ForkAcceptedBy(bytes32 indexed client, uint32 indexed number);
 	event ForkRejectedBy(bytes32 indexed client, uint32 indexed number);
@@ -107,27 +94,6 @@ contract SimpleOperations is Operations {
 	function() public payable { Received(msg.sender, msg.value, msg.data); }
 
 	// Functions for client owners
-
-	function proposeTransaction(bytes32 _txid, address _to, bytes _data, uint _value, uint _gas) public only_required_client_owner only_when_no_proxy(_txid) returns (uint txSuccess) {
-		var client = clientOwner[msg.sender];
-		proxy[_txid] = Transaction(1, _to, _data, _value, _gas);
-		proxy[_txid].status[client] = Status.Accepted;
-		txSuccess = checkProxy(_txid);
-		TransactionProposed(client, _txid, _to, _data, _value, _gas);
-	}
-
-	function confirmTransaction(bytes32 _txid) public only_required_client_owner only_when_proxy(_txid) only_when_proxy_undecided(_txid) returns (uint txSuccess) {
-		var client = clientOwner[msg.sender];
-		proxy[_txid].status[client] = Status.Accepted;
-		proxy[_txid].requiredCount += 1;
-		txSuccess = checkProxy(_txid);
-		TransactionConfirmed(client, _txid);
-	}
-
-	function rejectTransaction(bytes32 _txid) public only_required_client_owner only_when_proxy(_txid) only_when_proxy_undecided(_txid) {
-		delete proxy[_txid];
-		TransactionRejected(clientOwner[msg.sender], _txid);
-	}
 
 	function proposeFork(uint32 _number, bytes32 _name, bool _hard, bytes32 _spec) public only_client_owner only_when_none_proposed {
 		fork[_number] = Fork(_name, _spec, _hard, false, 0);
@@ -258,15 +224,6 @@ contract SimpleOperations is Operations {
 		proposedFork = 0;
 	}
 
-	function checkProxy(bytes32 _txid) internal when_proxy_confirmed(_txid) returns (uint txSuccess) {
-		var txn = proxy[_txid];
-		// solium-disable-next-line security/no-call-value
-		var success = txn.to.call.value(txn.value).gas(txn.gas)(txn.data);
-		TransactionRelayed(_txid, success);
-		txSuccess = success ? 2 : 1;
-		delete proxy[_txid];
-	}
-
 	// Modifiers
 
 	modifier only_owner {
@@ -312,22 +269,6 @@ contract SimpleOperations is Operations {
 		_;
 	}
 
-	modifier only_when_proxy(bytes32 _txid) {
-		require(proxy[_txid].requiredCount != 0);
-		_;
-	}
-
-	modifier only_when_no_proxy(bytes32 _txid) {
-		require(proxy[_txid].requiredCount == 0);
-		_;
-	}
-
-	modifier only_when_proxy_undecided(bytes32 _txid) {
-		require(proxy[_txid].status[clientOwner[msg.sender]] == Status.Undecided);
-		_;
-	}
-
-
 	modifier when_required(bytes32 _client) {
 		if (client[_client].required)
 			_;
@@ -343,15 +284,9 @@ contract SimpleOperations is Operations {
 			_;
 	}
 
-	modifier when_proxy_confirmed(bytes32 _txid) {
-		if (proxy[_txid].requiredCount >= clientsRequired)
-			_;
-	}
-
 	mapping (uint32 => Fork) public fork;
 	mapping (bytes32 => Client) public client;
 	mapping (address => bytes32) public clientOwner;
-	mapping (bytes32 => Transaction) public proxy;
 
 	uint32 public clientsRequired;
 	uint32 public latestFork;
