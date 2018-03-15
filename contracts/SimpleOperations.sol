@@ -38,82 +38,27 @@ contract SimpleOperations is Operations {
 
 	struct Client {
 		address owner;
-		bool required;
 		mapping (bytes32 => Release) release;
 		mapping (uint8 => bytes32) current;
 		mapping (bytes32 => Build) build; // checksum -> Build
 	}
 
-	enum Status {
-		Undecided,
-		Accepted,
-		Rejected
-	}
-
-	struct Fork {
-		bytes32 name;
-		bytes32 spec;
-		bool hard;
-		bool ratified;
-		uint requiredCount;
-		mapping (bytes32 => Status) status;
-	}
-
 	event Received(address indexed from, uint value, bytes data);
-	event ForkProposed(bytes32 indexed client, uint32 indexed number, bytes32 indexed name, bytes32 spec, bool hard);
-	event ForkAcceptedBy(bytes32 indexed client, uint32 indexed number);
-	event ForkRejectedBy(bytes32 indexed client, uint32 indexed number);
-	event ForkRejected(uint32 indexed forkNumber);
-	event ForkRatified(uint32 indexed forkNumber);
 	event ReleaseAdded(bytes32 indexed client, uint32 indexed forkBlock, bytes32 release, uint8 track, uint24 semver, bool indexed critical);
 	event ChecksumAdded(bytes32 indexed client, bytes32 indexed release, bytes32 indexed platform, bytes32 checksum);
 	event ClientAdded(bytes32 indexed client, address owner);
 	event ClientRemoved(bytes32 indexed client);
 	event ClientOwnerChanged(bytes32 indexed client, address indexed old, address indexed now);
-	event ClientRequiredChanged(bytes32 indexed client, bool now);
 	event OwnerChanged(address old, address now);
 
 	function SimpleOperations() public {
-		// Mainnet
-		// fork[0] = Fork("frontier", keccak256("frontier"), true, true, 0);
-		// fork[1150000] = Fork("homestead", keccak256("homestead"), true, true, 0);
-		// fork[2463000] = Fork("eip150", keccak256("eip150"), true, true, 0);
-		// fork[2675000] = Fork("eip155", keccak256("eip155"), true, true, 0);
-		// latestFork = 2675000;
-
-		// Ropsten
-		fork[0] = Fork("eip150", keccak256("eip150"), true, true, 0);
-		fork[10] = Fork("eip155", keccak256("eip155"), true, true, 0);
-		latestFork = 10;
-
-		client["parity"] = Client(msg.sender, true);
+		client["parity"] = Client(msg.sender);
 		clientOwner[msg.sender] = "parity";
-		clientsRequired = 1;
 	}
 
 	function() public payable { Received(msg.sender, msg.value, msg.data); }
 
 	// Functions for client owners
-
-	function proposeFork(uint32 _number, bytes32 _name, bool _hard, bytes32 _spec) public only_client_owner only_when_none_proposed {
-		fork[_number] = Fork(_name, _spec, _hard, false, 0);
-		proposedFork = _number;
-		ForkProposed(clientOwner[msg.sender], _number, _name, _spec, _hard);
-	}
-
-	function acceptFork() public only_when_proposed only_undecided_client_owner {
-		var newClient = clientOwner[msg.sender];
-		fork[proposedFork].status[newClient] = Status.Accepted;
-		ForkAcceptedBy(newClient, proposedFork);
-		noteAccepted(newClient);
-	}
-
-	function rejectFork() public only_when_proposed only_undecided_client_owner only_unratified {
-		var newClient = clientOwner[msg.sender];
-		fork[proposedFork].status[newClient] = Status.Rejected;
-		ForkRejectedBy(newClient, proposedFork);
-		noteRejected(newClient);
-	}
 
 	function setClientOwner(address _newOwner) public only_client_owner {
 		var newClient = clientOwner[msg.sender];
@@ -146,7 +91,6 @@ contract SimpleOperations is Operations {
 	}
 
 	function removeClient(bytes32 _client) public only_owner {
-		setClientRequired(_client, false);
 		resetClientOwner(_client, 0);
 		delete client[_client];
 		ClientRemoved(_client);
@@ -158,13 +102,6 @@ contract SimpleOperations is Operations {
 		clientOwner[old] = bytes32(0);
 		clientOwner[_newOwner] = _client;
 		client[_client].owner = _newOwner;
-	}
-
-	function setClientRequired(bytes32 _client, bool _r) public only_owner when_changing_required(_client, _r) {
-		ClientRequiredChanged(_client, _r);
-		client[_client].required = _r;
-		clientsRequired = _r ? clientsRequired + 1 : (clientsRequired - 1);
-		checkFork();
 	}
 
 	function setOwner(address _newOwner) public only_owner {
@@ -204,26 +141,6 @@ contract SimpleOperations is Operations {
 		return client[_client].release[_release].checksum[_platform];
 	}
 
-	// Internals
-
-	function noteAccepted(bytes32 _client) internal when_required(_client) {
-		fork[proposedFork].requiredCount += 1;
-		checkFork();
-	}
-
-	function noteRejected(bytes32 _client) internal when_required(_client) {
-		ForkRejected(proposedFork);
-		delete fork[proposedFork];
-		proposedFork = 0;
-	}
-
-	function checkFork() internal when_have_all_required {
-		ForkRatified(proposedFork);
-		fork[proposedFork].ratified = true;
-		latestFork = proposedFork;
-		proposedFork = 0;
-	}
-
 	// Modifiers
 
 	modifier only_owner {
@@ -237,59 +154,8 @@ contract SimpleOperations is Operations {
 		_;
 	}
 
-	modifier only_required_client_owner {
-		var newClient = clientOwner[msg.sender];
-		require(client[newClient].required);
-		_;
-	}
-
-	modifier only_ratified {
-		require(fork[proposedFork].ratified);
-		_;
-	}
-
-	modifier only_unratified {
-		require(!fork[proposedFork].ratified);
-		_;
-	}
-
-	modifier only_undecided_client_owner {
-		var newClient = clientOwner[msg.sender];
-		require(newClient != 0 && fork[proposedFork].status[newClient] == Status.Undecided);
-		_;
-	}
-
-	modifier only_when_none_proposed {
-		require(proposedFork == 0);
-		_;
-	}
-
-	modifier only_when_proposed {
-		require(fork[proposedFork].name != 0);
-		_;
-	}
-
-	modifier when_required(bytes32 _client) {
-		if (client[_client].required)
-			_;
-	}
-
-	modifier when_have_all_required {
-		if (fork[proposedFork].requiredCount >= clientsRequired)
-			_;
-	}
-
-	modifier when_changing_required(bytes32 _client, bool _r) {
-		if (client[_client].required != _r)
-			_;
-	}
-
-	mapping (uint32 => Fork) public fork;
 	mapping (bytes32 => Client) public client;
 	mapping (address => bytes32) public clientOwner;
 
-	uint32 public clientsRequired;
-	uint32 public latestFork;
-	uint32 public proposedFork;
 	address public grandOwner = msg.sender;
 }
