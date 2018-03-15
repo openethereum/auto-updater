@@ -66,7 +66,7 @@ contract OperationsProxy {
 	}
 
 	function send(address _to, uint _value, bytes _data) public payable only_owner {
-		if (!_to.call.value(_value)(_data)) throw;
+		require(_to.call.value(_value)(_data));
 		Sent(_to, _value, _data);
 	}
 
@@ -114,7 +114,7 @@ contract OperationsProxy {
 	}
 
 	function confirm(uint8 _track, bytes32 _hash) public payable only_confirmer_of_track(_track) {
-		if (!address(operations).call.value(msg.value)(waiting[_track][_hash])) throw;
+		require(address(operations).call.value(msg.value)(waiting[_track][_hash]));
 		delete waiting[_track][_hash];
 		RequestConfirmed(_track, _hash);
 	}
@@ -125,7 +125,7 @@ contract OperationsProxy {
 	}
 
 	function relay() internal {
-		if (!address(operations).call.value(msg.value)(msg.data)) throw;
+		require(address(operations).call.value(msg.value)(msg.data));
 	}
 
 	function cleanupRelease(bytes32 _release) public only_confirmer_of_track(trackOfPendingRelease[_release]) {
@@ -136,9 +136,9 @@ contract OperationsProxy {
 		selfdestruct(msg.sender);
 	}
 
-	modifier only_owner { if (msg.sender != owner) throw; _; }
-	modifier only_delegate_of_track(uint8 track) { if (delegate[track] != msg.sender) throw; _; }
-	modifier only_confirmer_of_track(uint8 track) { if (confirmer[track] != msg.sender) throw; _; }
+	modifier only_owner { require(msg.sender == owner); _; }
+	modifier only_delegate_of_track(uint8 track) { require(delegate[track] == msg.sender); _; }
+	modifier only_confirmer_of_track(uint8 track) { require(confirmer[track] == msg.sender); _; }
 
 	address public owner;
 	mapping(uint8 => address) public delegate;
