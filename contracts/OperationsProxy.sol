@@ -27,14 +27,14 @@ contract OperationsFace {
 	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public;
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public;
 
-	function isLatest(bytes32 _client, bytes32 _release) public constant returns (bool);
-	function track(bytes32 _client, bytes32 _release) public constant returns (uint8);
-	function latestInTrack(bytes32 _client, uint8 _track) public constant returns (bytes32);
-	function build(bytes32 _client, bytes32 _checksum) public constant returns (bytes32 o_release, bytes32 o_platform);
-	function release(bytes32 _client, bytes32 _release) public constant returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical);
-	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public constant returns (bytes32);
+	function isLatest(bytes32 _client, bytes32 _release) public view returns (bool);
+	function track(bytes32 _client, bytes32 _release) public view returns (uint8);
+	function latestInTrack(bytes32 _client, uint8 _track) public view returns (bytes32);
+	function build(bytes32 _client, bytes32 _checksum) public view returns (bytes32 o_release, bytes32 o_platform);
+	function release(bytes32 _client, bytes32 _release) public view returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical);
+	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public view returns (bytes32);
 
-	function clientOwner(address _owner) public constant returns (bytes32);
+	function clientOwner(address _owner) public view returns (bytes32);
 }
 
 /// Specialise proxy wallet. Owner can send transactions unhindered. Delegates
