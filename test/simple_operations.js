@@ -1,10 +1,10 @@
 "use strict";
 
-let Operations = artifacts.require("./Operations.sol");
+let SimpleOperations = artifacts.require("./SimpleOperations.sol");
 
-contract("Operations", accounts => {
+contract("SimpleOperations", accounts => {
   it("should initialize the contract with the parity client", async () => {
-    let operations = await Operations.deployed();
+    let operations = await SimpleOperations.deployed();
     let [owner, required] = await operations.client.call("parity");
 
     assert.equal(owner, accounts[0]);

@@ -1,7 +1,7 @@
 "use strict";
 
-let Operations = artifacts.require("./Operations.sol");
+let SimpleOperations = artifacts.require("./SimpleOperations.sol");
 
 module.exports = deployer => {
-  deployer.deploy(Operations);
+  deployer.deploy(SimpleOperations);
 };
