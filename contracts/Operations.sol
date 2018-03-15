@@ -168,7 +168,7 @@ contract Operations is OperationsFace {
 
 	function setClientOwner(address _newOwner) public only_client_owner {
 		var newClient = clientOwner[msg.sender];
-		clientOwner[msg.sender] = 0;
+		clientOwner[msg.sender] = bytes32(0);
 		clientOwner[_newOwner] = newClient;
 		client[newClient].owner = _newOwner;
 		ClientOwnerChanged(newClient, msg.sender, _newOwner);
@@ -206,7 +206,7 @@ contract Operations is OperationsFace {
 	function resetClientOwner(bytes32 _client, address _newOwner) public only_owner {
 		var old = client[_client].owner;
 		ClientOwnerChanged(_client, old, _newOwner);
-		clientOwner[old] = 0;
+		clientOwner[old] = bytes32(0);
 		clientOwner[_newOwner] = _client;
 		client[_client].owner = _newOwner;
 	}
