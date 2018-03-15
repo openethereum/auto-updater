@@ -17,22 +17,22 @@
 pragma solidity ^0.4.7;
 
 contract OperationsFace {
-	function proposeTransaction(bytes32 _txid, address _to, bytes _data, uint _value, uint _gas) returns (uint txSuccess);
-	function confirmTransaction(bytes32 _txid) returns (uint txSuccess);
-	function rejectTransaction(bytes32 _txid);
-	function proposeFork(uint32 _number, bytes32 _name, bool _hard, bytes32 _spec);
-	function acceptFork();
-	function rejectFork();
-	function setClientOwner(address _newOwner);
-	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical);
-	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum);
+	function proposeTransaction(bytes32 _txid, address _to, bytes _data, uint _value, uint _gas) public returns (uint txSuccess);
+	function confirmTransaction(bytes32 _txid) public returns (uint txSuccess);
+	function rejectTransaction(bytes32 _txid) public;
+	function proposeFork(uint32 _number, bytes32 _name, bool _hard, bytes32 _spec) public;
+	function acceptFork() public;
+	function rejectFork() public;
+	function setClientOwner(address _newOwner) public;
+	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public;
+	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public;
 
-	function isLatest(bytes32 _client, bytes32 _release) constant returns (bool);
-	function track(bytes32 _client, bytes32 _release) constant returns (uint8);
-	function latestInTrack(bytes32 _client, uint8 _track) constant returns (bytes32);
-	function build(bytes32 _client, bytes32 _checksum) constant returns (bytes32 o_release, bytes32 o_platform);
-	function release(bytes32 _client, bytes32 _release) constant returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical);
-	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) constant returns (bytes32);
+	function isLatest(bytes32 _client, bytes32 _release) public constant returns (bool);
+	function track(bytes32 _client, bytes32 _release) public constant returns (uint8);
+	function latestInTrack(bytes32 _client, uint8 _track) public constant returns (bytes32);
+	function build(bytes32 _client, bytes32 _checksum) public constant returns (bytes32 o_release, bytes32 o_platform);
+	function release(bytes32 _client, bytes32 _release) public constant returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical);
+	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public constant returns (bytes32);
 }
 
 contract Operations is OperationsFace {
@@ -103,7 +103,7 @@ contract Operations is OperationsFace {
 	event ClientRequiredChanged(bytes32 indexed client, bool now);
 	event OwnerChanged(address old, address now);
 
-	function Operations() {
+	function Operations() public {
 		// Mainnet
 		// fork[0] = Fork("frontier", sha3("frontier"), true, true, 0);
 		// fork[1150000] = Fork("homestead", sha3("homestead"), true, true, 0);
@@ -121,11 +121,11 @@ contract Operations is OperationsFace {
 		clientsRequired = 1;
 	}
 
-	function() payable { Received(msg.sender, msg.value, msg.data); }
+	function() public payable { Received(msg.sender, msg.value, msg.data); }
 
 	// Functions for client owners
 
-	function proposeTransaction(bytes32 _txid, address _to, bytes _data, uint _value, uint _gas) only_required_client_owner only_when_no_proxy(_txid) returns (uint txSuccess) {
+	function proposeTransaction(bytes32 _txid, address _to, bytes _data, uint _value, uint _gas) public only_required_client_owner only_when_no_proxy(_txid) returns (uint txSuccess) {
 		var client = clientOwner[msg.sender];
 		proxy[_txid] = Transaction(1, _to, _data, _value, _gas);
 		proxy[_txid].status[client] = Status.Accepted;
@@ -133,7 +133,7 @@ contract Operations is OperationsFace {
 		TransactionProposed(client, _txid, _to, _data, _value, _gas);
 	}
 
-	function confirmTransaction(bytes32 _txid) only_required_client_owner only_when_proxy(_txid) only_when_proxy_undecided(_txid) returns (uint txSuccess) {
+	function confirmTransaction(bytes32 _txid) public only_required_client_owner only_when_proxy(_txid) only_when_proxy_undecided(_txid) returns (uint txSuccess) {
 		var client = clientOwner[msg.sender];
 		proxy[_txid].status[client] = Status.Accepted;
 		proxy[_txid].requiredCount += 1;
@@ -141,32 +141,32 @@ contract Operations is OperationsFace {
 		TransactionConfirmed(client, _txid);
 	}
 
-	function rejectTransaction(bytes32 _txid) only_required_client_owner only_when_proxy(_txid) only_when_proxy_undecided(_txid) {
+	function rejectTransaction(bytes32 _txid) public only_required_client_owner only_when_proxy(_txid) only_when_proxy_undecided(_txid) {
 		delete proxy[_txid];
 		TransactionRejected(clientOwner[msg.sender], _txid);
 	}
 
-	function proposeFork(uint32 _number, bytes32 _name, bool _hard, bytes32 _spec) only_client_owner only_when_none_proposed {
+	function proposeFork(uint32 _number, bytes32 _name, bool _hard, bytes32 _spec) public only_client_owner only_when_none_proposed {
 		fork[_number] = Fork(_name, _spec, _hard, false, 0);
 		proposedFork = _number;
 		ForkProposed(clientOwner[msg.sender], _number, _name, _spec, _hard);
 	}
 
-	function acceptFork() only_when_proposed only_undecided_client_owner {
+	function acceptFork() public only_when_proposed only_undecided_client_owner {
 		var newClient = clientOwner[msg.sender];
 		fork[proposedFork].status[newClient] = Status.Accepted;
 		ForkAcceptedBy(newClient, proposedFork);
 		noteAccepted(newClient);
 	}
 
-	function rejectFork() only_when_proposed only_undecided_client_owner only_unratified {
+	function rejectFork() public only_when_proposed only_undecided_client_owner only_unratified {
 		var newClient = clientOwner[msg.sender];
 		fork[proposedFork].status[newClient] = Status.Rejected;
 		ForkRejectedBy(newClient, proposedFork);
 		noteRejected(newClient);
 	}
 
-	function setClientOwner(address _newOwner) only_client_owner {
+	function setClientOwner(address _newOwner) public only_client_owner {
 		var newClient = clientOwner[msg.sender];
 		clientOwner[msg.sender] = 0;
 		clientOwner[_newOwner] = newClient;
@@ -174,14 +174,14 @@ contract Operations is OperationsFace {
 		ClientOwnerChanged(newClient, msg.sender, _newOwner);
 	}
 
-	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) only_client_owner {
+	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public only_client_owner {
 		var newClient = clientOwner[msg.sender];
 		client[newClient].release[_release] = Release(_forkBlock, _track, _semver, _critical);
 		client[newClient].current[_track] = _release;
 		ReleaseAdded(newClient, _forkBlock, _release, _track, _semver, _critical);
 	}
 
-	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) only_client_owner {
+	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public only_client_owner {
 		var newClient = clientOwner[msg.sender];
 		client[newClient].build[_checksum] = Build(_release, _platform);
 		client[newClient].release[_release].checksum[_platform] = _checksum;
@@ -190,20 +190,20 @@ contract Operations is OperationsFace {
 
 	// Admin functions
 
-	function addClient(bytes32 _client, address _owner) only_owner {
+	function addClient(bytes32 _client, address _owner) public only_owner {
 		client[_client].owner = _owner;
 		clientOwner[_owner] = _client;
 		ClientAdded(_client, _owner);
 	}
 
-	function removeClient(bytes32 _client) only_owner {
+	function removeClient(bytes32 _client) public only_owner {
 		setClientRequired(_client, false);
 		resetClientOwner(_client, 0);
 		delete client[_client];
 		ClientRemoved(_client);
 	}
 
-	function resetClientOwner(bytes32 _client, address _newOwner) only_owner {
+	function resetClientOwner(bytes32 _client, address _newOwner) public only_owner {
 		var old = client[_client].owner;
 		ClientOwnerChanged(_client, old, _newOwner);
 		clientOwner[old] = 0;
@@ -211,39 +211,39 @@ contract Operations is OperationsFace {
 		client[_client].owner = _newOwner;
 	}
 
-	function setClientRequired(bytes32 _client, bool _r) only_owner when_changing_required(_client, _r) {
+	function setClientRequired(bytes32 _client, bool _r) public only_owner when_changing_required(_client, _r) {
 		ClientRequiredChanged(_client, _r);
 		client[_client].required = _r;
 		clientsRequired = _r ? clientsRequired + 1 : (clientsRequired - 1);
 		checkFork();
 	}
 
-	function setOwner(address _newOwner) only_owner {
+	function setOwner(address _newOwner) public only_owner {
 		OwnerChanged(grandOwner, _newOwner);
 		grandOwner = _newOwner;
 	}
 
 	// Getters
 
-	function isLatest(bytes32 _client, bytes32 _release) constant returns (bool) {
+	function isLatest(bytes32 _client, bytes32 _release) public constant returns (bool) {
 		return latestInTrack(_client, track(_client, _release)) == _release;
 	}
 
-	function track(bytes32 _client, bytes32 _release) constant returns (uint8) {
+	function track(bytes32 _client, bytes32 _release) public constant returns (uint8) {
 		return client[_client].release[_release].track;
 	}
 
-	function latestInTrack(bytes32 _client, uint8 _track) constant returns (bytes32) {
+	function latestInTrack(bytes32 _client, uint8 _track) public constant returns (bytes32) {
 		return client[_client].current[_track];
 	}
 
-	function build(bytes32 _client, bytes32 _checksum) constant returns (bytes32 o_release, bytes32 o_platform) {
+	function build(bytes32 _client, bytes32 _checksum) public constant returns (bytes32 o_release, bytes32 o_platform) {
 		var b = client[_client].build[_checksum];
 		o_release = b.release;
 		o_platform = b.platform;
 	}
 
-	function release(bytes32 _client, bytes32 _release) constant returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical) {
+	function release(bytes32 _client, bytes32 _release) public constant returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical) {
 		var b = client[_client].release[_release];
 		o_forkBlock = b.forkBlock;
 		o_track = b.track;
@@ -251,7 +251,7 @@ contract Operations is OperationsFace {
 		o_critical = b.critical;
 	}
 
-	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) constant returns (bytes32) {
+	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public constant returns (bytes32) {
 		return client[_client].release[_release].checksum[_platform];
 	}
 
