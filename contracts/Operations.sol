@@ -17,10 +17,6 @@
 pragma solidity ^0.4.19;
 
 interface Operations {
-	function proposeFork(uint32 _number, bytes32 _name, bool _hard, bytes32 _spec) public;
-	function acceptFork() public;
-	function rejectFork() public;
-	function setClientOwner(address _newOwner) public;
 	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public;
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public;
 
@@ -32,4 +28,5 @@ interface Operations {
 	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public view returns (bytes32);
 
 	function clientOwner(address _owner) public view returns (bytes32);
+	function setClientOwner(address _newOwner) public;
 }
