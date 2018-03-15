@@ -285,26 +285,84 @@ contract Operations is OperationsFace {
 
 	// Modifiers
 
-	modifier only_owner { require(grandOwner == msg.sender); _; }
-	modifier only_client_owner { var newClient = clientOwner[msg.sender]; require(newClient != 0); _; }
-	modifier only_required_client_owner { var newClient = clientOwner[msg.sender]; require(client[newClient].required); _; }
-	modifier only_ratified { require(fork[proposedFork].ratified); _; }
-	modifier only_unratified { require(fork[proposedFork].ratified); _; }
+	modifier only_owner {
+		require(grandOwner == msg.sender);
+		_;
+	}
+
+	modifier only_client_owner {
+		var newClient = clientOwner[msg.sender];
+		require(newClient != 0);
+		_;
+	}
+
+	modifier only_required_client_owner {
+		var newClient = clientOwner[msg.sender];
+		require(client[newClient].required);
+		_;
+	}
+
+	modifier only_ratified {
+		require(fork[proposedFork].ratified);
+		_;
+	}
+
+	modifier only_unratified {
+		require(fork[proposedFork].ratified);
+		_;
+	}
+
 	modifier only_undecided_client_owner {
 		var newClient = clientOwner[msg.sender];
 		require(newClient != 0 && fork[proposedFork].status[newClient] == Status.Undecided);
 		_;
 	}
-	modifier only_when_none_proposed { require(proposedFork == 0); _; }
-	modifier only_when_proposed { require(fork[proposedFork].name != 0); _; }
-	modifier only_when_proxy(bytes32 _txid) { require(proxy[_txid].requiredCount != 0); _; }
-	modifier only_when_no_proxy(bytes32 _txid) { require(proxy[_txid].requiredCount == 0); _; }
-	modifier only_when_proxy_undecided(bytes32 _txid) { require(proxy[_txid].status[clientOwner[msg.sender]] == Status.Undecided); _; }
 
-	modifier when_required(bytes32 _client) { if (client[_client].required) _; }
-	modifier when_have_all_required { if (fork[proposedFork].requiredCount >= clientsRequired) _; }
-	modifier when_changing_required(bytes32 _client, bool _r) { if (client[_client].required != _r) _; }
-	modifier when_proxy_confirmed(bytes32 _txid) { if (proxy[_txid].requiredCount >= clientsRequired) _; }
+	modifier only_when_none_proposed {
+		require(proposedFork == 0);
+		_;
+	}
+
+	modifier only_when_proposed {
+		require(fork[proposedFork].name != 0);
+		_;
+	}
+
+	modifier only_when_proxy(bytes32 _txid) {
+		require(proxy[_txid].requiredCount != 0);
+		_;
+	}
+
+	modifier only_when_no_proxy(bytes32 _txid) {
+		require(proxy[_txid].requiredCount == 0);
+		_;
+	}
+
+	modifier only_when_proxy_undecided(bytes32 _txid) {
+		require(proxy[_txid].status[clientOwner[msg.sender]] == Status.Undecided);
+		_;
+	}
+
+
+	modifier when_required(bytes32 _client) {
+		if (client[_client].required)
+			_;
+	}
+
+	modifier when_have_all_required {
+		if (fork[proposedFork].requiredCount >= clientsRequired)
+			_;
+	}
+
+	modifier when_changing_required(bytes32 _client, bool _r) {
+		if (client[_client].required != _r)
+			_;
+	}
+
+	modifier when_proxy_confirmed(bytes32 _txid) {
+		if (proxy[_txid].requiredCount >= clientsRequired)
+			_;
+	}
 
 	mapping (uint32 => Fork) public fork;
 	mapping (bytes32 => Client) public client;
