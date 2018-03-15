@@ -66,6 +66,7 @@ contract OperationsProxy {
 	}
 
 	function send(address _to, uint _value, bytes _data) public payable only_owner {
+		// solium-disable-next-line security/no-call-value
 		require(_to.call.value(_value)(_data));
 		Sent(_to, _value, _data);
 	}
@@ -114,6 +115,7 @@ contract OperationsProxy {
 	}
 
 	function confirm(uint8 _track, bytes32 _hash) public payable only_confirmer_of_track(_track) {
+		// solium-disable-next-line security/no-call-value
 		require(address(operations).call.value(msg.value)(waiting[_track][_hash]));
 		delete waiting[_track][_hash];
 		RequestConfirmed(_track, _hash);
@@ -125,6 +127,7 @@ contract OperationsProxy {
 	}
 
 	function relay() internal {
+		// solium-disable-next-line security/no-call-value
 		require(address(operations).call.value(msg.value)(msg.data));
 	}
 

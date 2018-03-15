@@ -277,6 +277,7 @@ contract Operations is OperationsFace {
 
 	function checkProxy(bytes32 _txid) internal when_proxy_confirmed(_txid) returns (uint txSuccess) {
 		var tx = proxy[_txid];
+		// solium-disable-next-line security/no-call-value
 		var success = tx.to.call.value(tx.value).gas(tx.gas)(tx.data);
 		TransactionRelayed(_txid, success);
 		txSuccess = success ? 2 : 1;
