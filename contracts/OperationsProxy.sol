@@ -102,7 +102,7 @@ contract OperationsProxy {
 
 	function relayOrConfirm(uint8 _track) internal only_delegate_of_track(_track) returns (bool) {
 		if (confirmer[_track] != 0) {
-			var h = sha3(msg.data);
+			var h = keccak256(msg.data);
 			waiting[_track][h] = msg.data;
 			NewRequestWaiting(_track, h);
 			return false;
