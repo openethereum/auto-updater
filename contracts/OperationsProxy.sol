@@ -136,9 +136,20 @@ contract OperationsProxy {
 		selfdestruct(msg.sender);
 	}
 
-	modifier only_owner { require(msg.sender == owner); _; }
-	modifier only_delegate_of_track(uint8 track) { require(delegate[track] == msg.sender); _; }
-	modifier only_confirmer_of_track(uint8 track) { require(confirmer[track] == msg.sender); _; }
+	modifier only_owner {
+		require(msg.sender == owner);
+		_;
+	}
+
+	modifier only_delegate_of_track(uint8 track) {
+		require(delegate[track] == msg.sender);
+		_;
+	}
+
+	modifier only_confirmer_of_track(uint8 track) {
+		require(confirmer[track] == msg.sender);
+		_;
+	}
 
 	address public owner;
 	mapping(uint8 => address) public delegate;
