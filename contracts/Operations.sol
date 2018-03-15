@@ -309,7 +309,7 @@ contract Operations is OperationsFace {
 	}
 
 	modifier only_unratified {
-		require(fork[proposedFork].ratified);
+		require(!fork[proposedFork].ratified);
 		_;
 	}
 
