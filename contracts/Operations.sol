@@ -17,9 +17,6 @@
 pragma solidity ^0.4.19;
 
 interface Operations {
-	function proposeTransaction(bytes32 _txid, address _to, bytes _data, uint _value, uint _gas) public returns (uint txSuccess);
-	function confirmTransaction(bytes32 _txid) public returns (uint txSuccess);
-	function rejectTransaction(bytes32 _txid) public;
 	function proposeFork(uint32 _number, bytes32 _name, bool _hard, bytes32 _spec) public;
 	function acceptFork() public;
 	function rejectFork() public;
