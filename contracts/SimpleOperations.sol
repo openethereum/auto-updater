@@ -142,6 +142,10 @@ contract SimpleOperations is Operations {
 		return client[_client].release[_release].checksum[_platform];
 	}
 
+	function clientOwner(address _owner) public view returns (bytes32) {
+		return clientOwner[_owner];
+	}
+
 	// Modifiers
 
 	modifier only_owner {
