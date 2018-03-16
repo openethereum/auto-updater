@@ -21,16 +21,12 @@ import "./Operations.sol";
 /// Specialise proxy wallet. Owner can send transactions unhindered. Delegates
 /// can send only particular transactions to a named Operations contract.
 contract OperationsProxy {
-	function OperationsProxy(address _owner, address _stable, address _beta, address _nightly, address _stableConfirmer, address _betaConfirmer, address _nightlyConfirmer, address _operations) public {
-		owner = _owner;
-		delegate[1] = _stable;
-		delegate[2] = _beta;
-		delegate[3] = _nightly;
-		confirmer[1] = _stableConfirmer;
-		confirmer[2] = _betaConfirmer;
-		confirmer[3] = _nightlyConfirmer;
-		operations = Operations(_operations);
-	}
+	address public owner;
+	mapping(uint8 => address) public delegate;
+	mapping(uint8 => address) public confirmer;
+	mapping(uint8 => mapping(bytes32 => bytes)) public waiting;
+	mapping(bytes32 => uint8) public trackOfPendingRelease;
+	Operations public operations;
 
 	event Sent(address indexed to, uint value, bytes data);
 	event OwnerChanged(address indexed was, address indexed who);
@@ -41,6 +37,17 @@ contract OperationsProxy {
 	event NewRequestWaiting(uint8 indexed track, bytes32 hash);
 	event RequestConfirmed(uint8 indexed track, bytes32 hash);
 	event RequestRejected(uint8 indexed track, bytes32 hash);
+
+	function OperationsProxy(address _owner, address _stable, address _beta, address _nightly, address _stableConfirmer, address _betaConfirmer, address _nightlyConfirmer, address _operations) public {
+		owner = _owner;
+		delegate[1] = _stable;
+		delegate[2] = _beta;
+		delegate[3] = _nightly;
+		confirmer[1] = _stableConfirmer;
+		confirmer[2] = _betaConfirmer;
+		confirmer[3] = _nightlyConfirmer;
+		operations = Operations(_operations);
+	}
 
 	function() public only_owner {
 		relay();
@@ -82,6 +89,26 @@ contract OperationsProxy {
 			AddChecksumRelayed(_release, _platform);
 	}
 
+	function confirm(uint8 _track, bytes32 _hash) public payable only_confirmer_of_track(_track) {
+		// solium-disable-next-line security/no-call-value
+		require(address(operations).call.value(msg.value)(waiting[_track][_hash]));
+		delete waiting[_track][_hash];
+		RequestConfirmed(_track, _hash);
+	}
+
+	function reject(uint8 _track, bytes32 _hash) public only_confirmer_of_track(_track) {
+		delete waiting[_track][_hash];
+		RequestRejected(_track, _hash);
+	}
+
+	function cleanupRelease(bytes32 _release) public only_confirmer_of_track(trackOfPendingRelease[_release]) {
+		delete trackOfPendingRelease[_release];
+	}
+
+	function kill() public only_owner {
+		selfdestruct(msg.sender);
+	}
+
 	function relayOrConfirm(uint8 _track) internal only_delegate_of_track(_track) returns (bool) {
 		if (confirmer[_track] != 0) {
 			var h = keccak256(msg.data);
@@ -95,29 +122,9 @@ contract OperationsProxy {
 		}
 	}
 
-	function confirm(uint8 _track, bytes32 _hash) public payable only_confirmer_of_track(_track) {
-		// solium-disable-next-line security/no-call-value
-		require(address(operations).call.value(msg.value)(waiting[_track][_hash]));
-		delete waiting[_track][_hash];
-		RequestConfirmed(_track, _hash);
-	}
-
-	function reject(uint8 _track, bytes32 _hash) public only_confirmer_of_track(_track) {
-		delete waiting[_track][_hash];
-		RequestRejected(_track, _hash);
-	}
-
 	function relay() internal {
 		// solium-disable-next-line security/no-call-value
 		require(address(operations).call.value(msg.value)(msg.data));
-	}
-
-	function cleanupRelease(bytes32 _release) public only_confirmer_of_track(trackOfPendingRelease[_release]) {
-		delete trackOfPendingRelease[_release];
-	}
-
-	function kill() public only_owner {
-		selfdestruct(msg.sender);
 	}
 
 	modifier only_owner {
@@ -134,11 +141,4 @@ contract OperationsProxy {
 		require(confirmer[track] == msg.sender);
 		_;
 	}
-
-	address public owner;
-	mapping(uint8 => address) public delegate;
-	mapping(uint8 => address) public confirmer;
-	mapping(uint8 => mapping(bytes32 => bytes)) public waiting;
-	mapping(bytes32 => uint8) public trackOfPendingRelease;
-	Operations public operations;
 }
