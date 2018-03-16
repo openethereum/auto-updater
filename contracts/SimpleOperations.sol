@@ -19,10 +19,6 @@ pragma solidity ^0.4.19;
 import "./Operations.sol";
 
 contract SimpleOperations is Operations {
-	uint8 constant Stable = 1;
-	uint8 constant Beta = 2;
-	uint8 constant Nightly = 3;
-
 	struct Release {
 		uint32 forkBlock;
 		uint8 track;
@@ -42,6 +38,11 @@ contract SimpleOperations is Operations {
 		mapping (uint8 => bytes32) current;
 		mapping (bytes32 => Build) build; // checksum -> Build
 	}
+
+	mapping (bytes32 => Client) public client;
+	mapping (address => bytes32) public clientOwner;
+
+	address public grandOwner = msg.sender;
 
 	event Received(address indexed from, uint value, bytes data);
 	event ReleaseAdded(bytes32 indexed client, uint32 indexed forkBlock, bytes32 release, uint8 track, uint24 semver, bool indexed critical);
@@ -153,9 +154,4 @@ contract SimpleOperations is Operations {
 		require(newClient != 0);
 		_;
 	}
-
-	mapping (bytes32 => Client) public client;
-	mapping (address => bytes32) public clientOwner;
-
-	address public grandOwner = msg.sender;
 }

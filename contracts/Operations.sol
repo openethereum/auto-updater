@@ -16,7 +16,11 @@
 
 pragma solidity ^0.4.19;
 
-interface Operations {
+contract Operations {
+	uint8 constant Stable = 1;
+	uint8 constant Beta = 2;
+	uint8 constant Nightly = 3;
+
 	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public;
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public;
 
