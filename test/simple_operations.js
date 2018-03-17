@@ -68,4 +68,65 @@ contract("SimpleOperations", accounts => {
     assert.equal(events[0].args.old, accounts[0]);
     assert.equal(events[0].args.now, accounts[1]);
   });
+
+  it("should allow the owner of a client to add a release", async () => {
+    let operations = await SimpleOperations.deployed();
+    let watcher = operations.ReleaseAdded();
+
+    let release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    let forkBlock = "100";
+    let track = "1";
+    let semver = "65536";
+    let critical = false;
+
+    // only the owner of the client can add a release
+    try {
+      await operations.addRelease(
+        release,
+        forkBlock,
+        track,
+        semver,
+        critical,
+        { from: accounts[1] },
+      );
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    let new_release = await operations.release("parity", release);
+    assert.deepEqual(
+      new_release.map(v => v.valueOf()),
+      ["0", "0", "0", false],
+    );
+
+    // we successfully add a release of the parity client
+    await operations.addRelease(release, forkBlock, track, semver, critical);
+
+    // the new release should be returned by the getter
+    new_release = await operations.release("parity", release);
+    assert.deepEqual(
+      new_release.map(v => v.valueOf()),
+      [forkBlock, track, semver, critical],
+    );
+
+    // it should be set has the latest release for its track
+    new_release = await operations.latestInTrack("parity", track);
+    assert.equal(new_release, release);
+    assert(await operations.isLatest("parity", release));
+
+    // we can get the track for this release
+    let new_track = await operations.track("parity", release);
+    assert.equal(new_track, track);
+
+    // it should emit a `ReleaseAdded` event
+    let events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity");
+    assert.equal(events[0].args.forkBlock, forkBlock);
+    assert.equal(events[0].args.release, release);
+    assert.equal(events[0].args.track, track);
+    assert.equal(events[0].args.semver, semver);
+    assert.equal(events[0].args.critical, critical);
+  });
 });
