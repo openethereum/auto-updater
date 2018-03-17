@@ -24,6 +24,7 @@
   "devDependencies": {
     "coveralls": "^3.0.0",
     "ganache-cli": "^6.1.0",
+    "mocha-steps": "^1.1.0",
     "solidity-coverage": "^0.4.13",
     "solium": "^1.1.5",
     "truffle": "^4.1.3"

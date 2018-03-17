@@ -1,5 +1,7 @@
 "use strict";
 
+let { step } = require("mocha-steps");
+
 let SimpleOperations = artifacts.require("./SimpleOperations.sol");
 
 contract("SimpleOperations", accounts => {
@@ -69,7 +71,7 @@ contract("SimpleOperations", accounts => {
     assert.equal(events[0].args.now, accounts[1]);
   });
 
-  it("should allow the owner of a client to add a release", async () => {
+  step("should allow the owner of a client to add a release", async () => {
     let operations = await SimpleOperations.deployed();
     let watcher = operations.ReleaseAdded();
 
@@ -128,5 +130,50 @@ contract("SimpleOperations", accounts => {
     assert.equal(events[0].args.track, track);
     assert.equal(events[0].args.semver, semver);
     assert.equal(events[0].args.critical, critical);
+  });
+
+  step("should allow the owner of a client to add a checksum", async () => {
+    let operations = await SimpleOperations.deployed();
+    let watcher = operations.ChecksumAdded();
+
+    let release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    let platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
+    let checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
+
+    // only the owner of the client can add a release
+    try {
+      await operations.addChecksum(
+        release,
+        platform,
+        checksum,
+        { from: accounts[1] },
+      );
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    let new_checksum = await operations.checksum("parity", release, platform);
+    assert.equal(new_checksum, 0);
+
+    // we successfully add a checksum for a release for
+    await operations.addChecksum(release, platform, checksum);
+
+    // the new checksum should be returned by the getter
+    new_checksum = await operations.checksum("parity", release, platform);
+    assert.equal(new_checksum, checksum);
+
+    // the checksum should map to the release and platform
+    let [new_release, new_platform] = await operations.build("parity", checksum);
+    assert.equal(new_release, release);
+    assert.equal(new_platform, platform);
+
+    // it should emit a `ChecksumAdded` event
+    let events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity");
+    assert.equal(events[0].args.release, release);
+    assert.equal(events[0].args.platform, platform);
+    assert.equal(events[0].args.checksum, checksum);
   });
 });
