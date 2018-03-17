@@ -1,24 +1,24 @@
 "use strict";
 
-let { step } = require("mocha-steps");
+const { step } = require("mocha-steps");
 
-let SimpleOperations = artifacts.require("./SimpleOperations.sol");
+const SimpleOperations = artifacts.require("./SimpleOperations.sol");
 
 contract("SimpleOperations", accounts => {
   it("should initialize the contract with the parity client", async () => {
-    let operations = await SimpleOperations.deployed();
-    let owner = await operations.client("parity");
+    const operations = await SimpleOperations.deployed();
+    const owner = await operations.client("parity");
 
     assert.equal(owner, accounts[0]);
 
     // the creator of the operations contract should be set as the owner of the parity client
-    let client = await operations.clientOwner(accounts[0]);
+    const client = await operations.clientOwner(accounts[0]);
     assert.equal(web3.toUtf8(client), "parity");
   });
 
   it("should emit a `Received` event on fallback", async () => {
-    let operations = await SimpleOperations.deployed();
-    let watcher = operations.Received();
+    const operations = await SimpleOperations.deployed();
+    const watcher = operations.Received();
 
     await operations.sendTransaction({
       from: accounts[1],
@@ -26,7 +26,7 @@ contract("SimpleOperations", accounts => {
       data: web3.fromUtf8("hello"),
     });
 
-    let events = await watcher.get();
+    const events = await watcher.get();
 
     assert.equal(events.length, 1);
     assert.equal(events[0].args.from, accounts[1]);
@@ -35,8 +35,8 @@ contract("SimpleOperations", accounts => {
   });
 
   it("should allow the owner of a client to transfer ownership", async () => {
-    let operations = await SimpleOperations.new();
-    let watcher = operations.ClientOwnerChanged();
+    const operations = await SimpleOperations.new();
+    const watcher = operations.ClientOwnerChanged();
 
     // only the owner of the client can transfer ownership
     try {
@@ -45,25 +45,25 @@ contract("SimpleOperations", accounts => {
       assert(error.message.includes("revert"));
     }
 
-    let owner = await operations.client("parity");
+    const owner = await operations.client("parity");
     assert.equal(owner, accounts[0]);
 
     // we successfully transfer ownership of the parity client
     await operations.setClientOwner(accounts[1]);
 
     // the `client` and `clientOwner` should point to the new owner
-    let new_owner = await operations.client("parity");
+    const new_owner = await operations.client("parity");
     assert.equal(new_owner, accounts[1]);
 
-    let client = await operations.clientOwner(accounts[1]);
+    const client = await operations.clientOwner(accounts[1]);
     assert.equal(web3.toUtf8(client), "parity");
 
     // the old owner should no longer exist in `clientOwner`
-    let old_client = await operations.clientOwner(accounts[0]);
+    const old_client = await operations.clientOwner(accounts[0]);
     assert.equal(old_client.valueOf(), 0);
 
     // it should emit a `ClientOwnerChanged` event
-    let events = await watcher.get();
+    const events = await watcher.get();
 
     assert.equal(events.length, 1);
     assert.equal(web3.toUtf8(events[0].args.client), "parity");
@@ -72,14 +72,14 @@ contract("SimpleOperations", accounts => {
   });
 
   step("should allow the owner of a client to add a release", async () => {
-    let operations = await SimpleOperations.deployed();
-    let watcher = operations.ReleaseAdded();
+    const operations = await SimpleOperations.deployed();
+    const watcher = operations.ReleaseAdded();
 
-    let release = "0x1234560000000000000000000000000000000000000000000000000000000000";
-    let forkBlock = "100";
-    let track = "1";
-    let semver = "65536";
-    let critical = false;
+    const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    const forkBlock = "100";
+    const track = "1";
+    const semver = "65536";
+    const critical = false;
 
     // only the owner of the client can add a release
     try {
@@ -117,11 +117,11 @@ contract("SimpleOperations", accounts => {
     assert(await operations.isLatest("parity", release));
 
     // we can get the track for this release
-    let new_track = await operations.track("parity", release);
+    const new_track = await operations.track("parity", release);
     assert.equal(new_track, track);
 
     // it should emit a `ReleaseAdded` event
-    let events = await watcher.get();
+    const events = await watcher.get();
 
     assert.equal(events.length, 1);
     assert.equal(web3.toUtf8(events[0].args.client), "parity");
@@ -133,12 +133,12 @@ contract("SimpleOperations", accounts => {
   });
 
   step("should allow the owner of a client to add a checksum", async () => {
-    let operations = await SimpleOperations.deployed();
-    let watcher = operations.ChecksumAdded();
+    const operations = await SimpleOperations.deployed();
+    const watcher = operations.ChecksumAdded();
 
-    let release = "0x1234560000000000000000000000000000000000000000000000000000000000";
-    let platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
-    let checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
+    const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    const platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
+    const checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
 
     // only the owner of the client can add a release
     try {
@@ -163,12 +163,12 @@ contract("SimpleOperations", accounts => {
     assert.equal(new_checksum, checksum);
 
     // the checksum should map to the release and platform
-    let [new_release, new_platform] = await operations.build("parity", checksum);
+    const [new_release, new_platform] = await operations.build("parity", checksum);
     assert.equal(new_release, release);
     assert.equal(new_platform, platform);
 
     // it should emit a `ChecksumAdded` event
-    let events = await watcher.get();
+    const events = await watcher.get();
 
     assert.equal(events.length, 1);
     assert.equal(web3.toUtf8(events[0].args.client), "parity");
@@ -178,8 +178,8 @@ contract("SimpleOperations", accounts => {
   });
 
   step("should allow the owner of the contract to add a client", async () => {
-    let operations = await SimpleOperations.deployed();
-    let watcher = operations.ClientAdded();
+    const operations = await SimpleOperations.deployed();
+    const watcher = operations.ClientAdded();
 
     // only the owner of the contract can add a new client
     try {
@@ -203,11 +203,11 @@ contract("SimpleOperations", accounts => {
     assert.equal(owner, accounts[2]);
 
     // the creator of the operations contract should be set as the owner of the parity client
-    let client = await operations.clientOwner(accounts[2]);
+    const client = await operations.clientOwner(accounts[2]);
     assert.equal(web3.toUtf8(client), "parity-light");
 
     // it should emit a `ClientAdded` event
-    let events = await watcher.get();
+    const events = await watcher.get();
 
     assert.equal(events.length, 1);
     assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
@@ -215,8 +215,8 @@ contract("SimpleOperations", accounts => {
   });
 
   step("should allow the owner of the contract to reset the client owner", async () => {
-    let operations = await SimpleOperations.deployed();
-    let watcher = operations.ClientOwnerChanged();
+    const operations = await SimpleOperations.deployed();
+    const watcher = operations.ClientOwnerChanged();
 
     // only the owner of the contract can reset the client owner
     try {
@@ -229,25 +229,25 @@ contract("SimpleOperations", accounts => {
       assert(error.message.includes("revert"));
     }
 
-    let owner = await operations.client("parity-light");
+    const owner = await operations.client("parity-light");
     assert.equal(owner, accounts[2]);
 
     // we successfully reset ownership of the parity-light client
     await operations.resetClientOwner("parity-light", accounts[1]);
 
     // the `client` and `clientOwner` should point to the new owner
-    let new_owner = await operations.client("parity-light");
+    const new_owner = await operations.client("parity-light");
     assert.equal(new_owner, accounts[1]);
 
-    let client = await operations.clientOwner(accounts[1]);
+    const client = await operations.clientOwner(accounts[1]);
     assert.equal(web3.toUtf8(client), "parity-light");
 
     // the old owner should no longer exist in `clientOwner`
-    let old_client = await operations.clientOwner(accounts[2]);
+    const old_client = await operations.clientOwner(accounts[2]);
     assert.equal(old_client.valueOf(), 0);
 
     // it should emit a `ClientOwnerChanged` event
-    let events = await watcher.get();
+    const events = await watcher.get();
 
     assert.equal(events.length, 1);
     assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
@@ -256,8 +256,8 @@ contract("SimpleOperations", accounts => {
   });
 
   step("should allow the owner of the contract to remove a client", async () => {
-    let operations = await SimpleOperations.deployed();
-    let watcher = operations.ClientRemoved();
+    const operations = await SimpleOperations.deployed();
+    const watcher = operations.ClientRemoved();
 
     // only the owner of the contract can remove a client
     try {
@@ -279,19 +279,19 @@ contract("SimpleOperations", accounts => {
     assert.equal(owner, 0);
 
     // the creator of the operations contract should be set as the owner of the parity client
-    let client = await operations.clientOwner(accounts[2]);
+    const client = await operations.clientOwner(accounts[2]);
     assert.equal(client, 0);
 
     // it should emit a `ClientRemoved` event
-    let events = await watcher.get();
+    const events = await watcher.get();
 
     assert.equal(events.length, 1);
     assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
   });
 
   it("should allow the owner of the contract to transfer ownership of the contract", async () => {
-    let operations = await SimpleOperations.new();
-    let watcher = operations.OwnerChanged();
+    const operations = await SimpleOperations.new();
+    const watcher = operations.OwnerChanged();
 
     // only the owner of the contract can transfer ownership
     try {
@@ -311,7 +311,7 @@ contract("SimpleOperations", accounts => {
     assert.equal(owner, accounts[1]);
 
     // it should emit a `OwnerChanged` event
-    let events = await watcher.get();
+    const events = await watcher.get();
 
     assert.equal(events.length, 1);
     assert.equal(events[0].args.old, accounts[0]);
