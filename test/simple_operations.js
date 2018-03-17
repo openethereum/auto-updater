@@ -176,4 +176,75 @@ contract("SimpleOperations", accounts => {
     assert.equal(events[0].args.platform, platform);
     assert.equal(events[0].args.checksum, checksum);
   });
+
+  step("should allow the owner of the contract to add a client", async () => {
+    let operations = await SimpleOperations.deployed();
+    let watcher = operations.ClientAdded();
+
+    // only the owner of the contract can add a new client
+    try {
+      await operations.addClient(
+        "parity-light",
+        accounts[2],
+        { from: accounts[1] },
+      );
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    let owner = await operations.client("parity-light");
+    assert.equal(owner, 0);
+
+    // we successfully add a new client
+    await operations.addClient("parity-light", accounts[2]);
+
+    owner = await operations.client("parity-light");
+
+    assert.equal(owner, accounts[2]);
+
+    // the creator of the operations contract should be set as the owner of the parity client
+    let client = await operations.clientOwner(accounts[2]);
+    assert.equal(web3.toUtf8(client), "parity-light");
+
+    // it should emit a `ClientAdded` event
+    let events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
+    assert.equal(events[0].args.owner, owner);
+  });
+
+  step("should allow the owner of the contract to remove a client", async () => {
+    let operations = await SimpleOperations.deployed();
+    let watcher = operations.ClientRemoved();
+
+    // only the owner of the contract can remove a client
+    try {
+      await operations.removeClient(
+        "parity-light",
+        { from: accounts[1] },
+      );
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    let owner = await operations.client("parity-light");
+    assert.equal(owner, accounts[2]);
+
+    // we successfully remove the client
+    await operations.removeClient("parity-light");
+
+    owner = await operations.client("parity-light");
+    assert.equal(owner, 0);
+
+    // the creator of the operations contract should be set as the owner of the parity client
+    let client = await operations.clientOwner(accounts[2]);
+    assert.equal(client, 0);
+
+    // it should emit a `ClientRemoved` event
+    let events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
+  });
 });
