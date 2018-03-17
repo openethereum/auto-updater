@@ -50,7 +50,9 @@ contract SimpleOperations is Operations {
 		clientOwner[msg.sender] = "parity";
 	}
 
-	function() public payable { Received(msg.sender, msg.value, msg.data); }
+	function() public payable {
+		Received(msg.sender, msg.value, msg.data);
+	}
 
 	// Functions for client owners
 
