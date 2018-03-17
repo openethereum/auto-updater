@@ -214,6 +214,47 @@ contract("SimpleOperations", accounts => {
     assert.equal(events[0].args.owner, owner);
   });
 
+  step("should allow the owner of the contract to reset the client owner", async () => {
+    let operations = await SimpleOperations.deployed();
+    let watcher = operations.ClientOwnerChanged();
+
+    // only the owner of the contract can reset the client owner
+    try {
+      await operations.resetClientOwner(
+        "parity-light",
+        accounts[0],
+        { from: accounts[1] },
+      );
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    let owner = await operations.client("parity-light");
+    assert.equal(owner, accounts[2]);
+
+    // we successfully reset ownership of the parity-light client
+    await operations.resetClientOwner("parity-light", accounts[1]);
+
+    // the `client` and `clientOwner` should point to the new owner
+    let new_owner = await operations.client("parity-light");
+    assert.equal(new_owner, accounts[1]);
+
+    let client = await operations.clientOwner(accounts[1]);
+    assert.equal(web3.toUtf8(client), "parity-light");
+
+    // the old owner should no longer exist in `clientOwner`
+    let old_client = await operations.clientOwner(accounts[2]);
+    assert.equal(old_client.valueOf(), 0);
+
+    // it should emit a `ClientOwnerChanged` event
+    let events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
+    assert.equal(events[0].args.old, accounts[2]);
+    assert.equal(events[0].args.now, accounts[1]);
+  });
+
   step("should allow the owner of the contract to remove a client", async () => {
     let operations = await SimpleOperations.deployed();
     let watcher = operations.ClientRemoved();
@@ -229,7 +270,7 @@ contract("SimpleOperations", accounts => {
     }
 
     let owner = await operations.client("parity-light");
-    assert.equal(owner, accounts[2]);
+    assert.equal(owner, accounts[1]);
 
     // we successfully remove the client
     await operations.removeClient("parity-light");
