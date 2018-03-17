@@ -288,4 +288,40 @@ contract("SimpleOperations", accounts => {
     assert.equal(events.length, 1);
     assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
   });
+
+  it("should allow the owner of the contract to transfer ownership of the contract", async () => {
+    let operations = await SimpleOperations.new();
+    let watcher = operations.OwnerChanged();
+
+    // only the owner of the contract can transfer ownership
+    try {
+      await operations.setOwner(accounts[1], { from: accounts[1] });
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    let owner = await operations.grandOwner();
+    assert.equal(owner, accounts[0]);
+
+    // we successfully transfer ownership of the contract
+    await operations.setOwner(accounts[1]);
+
+    // the `grandOwner` should point to the new owner
+    owner = await operations.grandOwner();
+    assert.equal(owner, accounts[1]);
+
+    // it should emit a `OwnerChanged` event
+    let events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.old, accounts[0]);
+    assert.equal(events[0].args.now, accounts[1]);
+
+    // the old owner can no longer set a new owner
+    try {
+      await operations.setOwner(accounts[0], { from: accounts[0] });
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+  });
 });
