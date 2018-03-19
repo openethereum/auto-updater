@@ -86,14 +86,14 @@ contract OperationsProxy {
 		confirmer[_track] = _confirmer;
 	}
 
-	function addRelease(bytes32 _release, uint32, uint8 _track, uint24, bool) public {
+	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public {
 		if (relayOrConfirm(_track))
 			AddReleaseRelayed(_track, _release);
 		else
 			trackOfPendingRelease[_release] = _track;
 	}
 
-	function addChecksum(bytes32 _release, bytes32 _platform, bytes32) public {
+	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public {
 		var track = trackOfPendingRelease[_release];
 		if (track == 0)
 			track = operations.track(operations.clientOwner(this), _release);
