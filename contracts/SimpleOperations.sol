@@ -42,6 +42,7 @@ contract SimpleOperations is Operations {
 	mapping (bytes32 => Client) public client;
 	mapping (address => bytes32) public clientOwner;
 
+	uint32 public latestFork = 0;
 	address public grandOwner = msg.sender;
 
 	event Received(address indexed from, uint value, bytes data);
@@ -50,6 +51,7 @@ contract SimpleOperations is Operations {
 	event ClientAdded(bytes32 indexed client, address owner);
 	event ClientRemoved(bytes32 indexed client);
 	event ClientOwnerChanged(bytes32 indexed client, address indexed old, address indexed now);
+	event ForkRatified(uint32 indexed forkNumber);
 	event OwnerChanged(address old, address now);
 
 	function SimpleOperations() public {
@@ -105,6 +107,11 @@ contract SimpleOperations is Operations {
 		client[_client].owner = _newOwner;
 	}
 
+	function setLatestFork(uint32 _forkNumber) public only_owner {
+		ForkRatified(_forkNumber);
+		latestFork = _forkNumber;
+	}
+
 	function setOwner(address _newOwner) public only_owner {
 		OwnerChanged(grandOwner, _newOwner);
 		grandOwner = _newOwner;
@@ -140,6 +147,10 @@ contract SimpleOperations is Operations {
 
 	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public view returns (bytes32) {
 		return client[_client].release[_release].checksum[_platform];
+	}
+
+	function latestFork() public view returns (uint32) {
+		return latestFork;
 	}
 
 	function clientOwner(address _owner) public view returns (bytes32) {

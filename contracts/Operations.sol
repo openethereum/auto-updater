@@ -30,6 +30,7 @@ contract Operations {
 	function build(bytes32 _client, bytes32 _checksum) public view returns (bytes32 o_release, bytes32 o_platform);
 	function release(bytes32 _client, bytes32 _release) public view returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical);
 	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public view returns (bytes32);
+	function latestFork() public view returns (uint32);
 
 	function clientOwner(address _owner) public view returns (bytes32);
 	function setClientOwner(address _newOwner) public;
