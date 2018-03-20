@@ -289,6 +289,34 @@ contract("SimpleOperations", accounts => {
     assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
   });
 
+  it("should allow the owner of the contract to set the latest supported fork", async () => {
+    const operations = await SimpleOperations.new();
+    const watcher = operations.ForkRatified();
+
+    // only the owner of the contract can set the latest fork
+    try {
+      await operations.setLatestFork(7, { from: accounts[1] });
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    let latestFork = await operations.latestFork();
+    assert.equal(latestFork, 0);
+
+    // we successfully set the latest supported fork
+    await operations.setLatestFork(7);
+
+    // the `latestFork` should point to the newly set latest fork
+    latestFork = await operations.latestFork();
+    assert.equal(latestFork, 7);
+
+    // it should emit a `ForkRatified` event
+    const events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.forkNumber, 7);
+  });
+
   it("should allow the owner of the contract to transfer ownership of the contract", async () => {
     const operations = await SimpleOperations.new();
     const watcher = operations.OwnerChanged();
