@@ -21,6 +21,15 @@ contract Operations {
 	uint8 constant Beta = 2;
 	uint8 constant Nightly = 3;
 
+	event Received(address indexed from, uint value, bytes data);
+	event ReleaseAdded(bytes32 indexed client, uint32 indexed forkBlock, bytes32 release, uint8 track, uint24 semver, bool indexed critical);
+	event ChecksumAdded(bytes32 indexed client, bytes32 indexed release, bytes32 indexed platform, bytes32 checksum);
+	event ClientAdded(bytes32 indexed client, address owner);
+	event ClientRemoved(bytes32 indexed client);
+	event ClientOwnerChanged(bytes32 indexed client, address indexed old, address indexed now);
+	event ForkRatified(uint32 indexed forkNumber);
+	event OwnerChanged(address old, address now);
+
 	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public;
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public;
 
