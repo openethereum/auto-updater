@@ -132,6 +132,8 @@ contract SimpleOperations is Operations {
 		only_owner
 		not_client_owner(_owner)
 	{
+		// we can't add a client that already exists
+		require(client[_client].owner == 0);
 		client[_client].owner = _owner;
 		clientOwner[_owner] = _client;
 		ClientAdded(_client, _owner);
