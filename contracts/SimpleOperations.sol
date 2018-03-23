@@ -74,6 +74,10 @@ contract SimpleOperations is Operations {
 		ClientOwnerChanged(newClient, msg.sender, _newOwner);
 	}
 
+	/// Adds a release which is identified by `_release`. When a release is succesfully added, a
+	/// `ReleaseAdded` event is emitted. The same release can be added multiple times (with
+	/// different parameters), therefore the `ReleaseAdded` event can be emitted multiple times for
+	/// the same release.
 	function addRelease(
 		bytes32 _release,
 		uint32 _forkBlock,
@@ -102,6 +106,10 @@ contract SimpleOperations is Operations {
 		);
 	}
 
+	/// Adds a `_checksum` for a `_release` binary targeting a given `_platform`. When a checksum is
+	/// succesfully added, a `ChecksumAdded` event is emitted. The same checksum can be added
+	/// multiple times (with different parameters), therefore the `ChecksumAdded` event can be
+	/// emitted multiple times for the same checksum.
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
 		public
 		only_client_owner
