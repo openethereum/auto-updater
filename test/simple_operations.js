@@ -140,7 +140,7 @@ contract("SimpleOperations", accounts => {
     const platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
     const checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
 
-    // only the owner of the client can add a release
+    // only the owner of the client can add a checksum
     try {
       await operations.addChecksum(
         release,
@@ -247,7 +247,7 @@ contract("SimpleOperations", accounts => {
 
     assert.equal(owner, accounts[2]);
 
-    // the creator of the operations contract should be set as the owner of the parity client
+    // `accounts[2]` should be set as the owner of the parity-light client
     const client = await operations.clientOwner(accounts[2]);
     assert.equal(web3.toUtf8(client), "parity-light");
 
@@ -323,7 +323,7 @@ contract("SimpleOperations", accounts => {
     owner = await operations.client("parity-light");
     assert.equal(owner, 0);
 
-    // the creator of the operations contract should be set as the owner of the parity client
+    // `accounts[2]` should not be set as a client owner
     const client = await operations.clientOwner(accounts[2]);
     assert.equal(client, 0);
 
@@ -396,5 +396,30 @@ contract("SimpleOperations", accounts => {
     } catch(error) {
       assert(error.message.includes("revert"));
     }
+  });
+
+  it("shouldn't allow the owner of the contract to add duplicate clients", async () => {
+    const operations = await SimpleOperations.new();
+    const watcher = operations.ClientAdded();
+
+    // we successfully add a new client
+    await operations.addClient("parity-light", accounts[1]);
+    let owner = await operations.client("parity-light");
+    assert.equal(owner, accounts[1]);
+
+    // we can't add a client that already exists
+    try {
+      await operations.addClient("parity-light", accounts[2]);
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    };
+
+    // client ownership should stay unchanged
+    owner = await operations.client("parity-light");
+    assert.equal(owner, accounts[1]);
+
+    // No event should be emitted
+    const events = await watcher.get();
+    assert.equal(events.length, 0);
   });
 });
