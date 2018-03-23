@@ -18,6 +18,7 @@ pragma solidity ^0.4.19;
 
 import "./Operations.sol";
 
+
 /// Specialise proxy wallet. Owner can send transactions unhindered. Delegates
 /// can send only particular transactions to a named Operations contract.
 contract OperationsProxy {

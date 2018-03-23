@@ -18,6 +18,7 @@ pragma solidity ^0.4.19;
 
 import "./Operations.sol";
 
+
 contract SimpleOperations is Operations {
 	struct Release {
 		uint32 forkBlock;
