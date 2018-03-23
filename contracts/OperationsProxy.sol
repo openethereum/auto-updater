@@ -1,6 +1,6 @@
 // The operations-proxy contract.
 //
-// Copyright 2016 Gavin Wood, Parity Technologies Ltd.
+// Copyright 2016-2018 Gavin Wood, Parity Technologies (UK) Ltd.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
