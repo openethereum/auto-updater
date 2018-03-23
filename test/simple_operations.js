@@ -5,6 +5,17 @@ const { step } = require("mocha-steps");
 const SimpleOperations = artifacts.require("./SimpleOperations.sol");
 
 contract("SimpleOperations", accounts => {
+  const assertThrowsAsync = async (fn, matcher) => {
+    let f = () => {};
+    try {
+      await fn();
+    } catch(e) {
+      f = () => { throw e; };
+    } finally {
+      assert.throws(f, matcher);
+    }
+  };
+
   it("should initialize the contract with the parity client", async () => {
     const operations = await SimpleOperations.deployed();
     const owner = await operations.client("parity");
@@ -39,11 +50,10 @@ contract("SimpleOperations", accounts => {
     const watcher = operations.ClientOwnerChanged();
 
     // only the owner of the client can transfer ownership
-    try {
-      await operations.setClientOwner(accounts[2], { from: accounts[1] });
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async() => await operations.setClientOwner(accounts[2], { from: accounts[1] }),
+      "revert",
+    );
 
     const owner = await operations.client("parity");
     assert.equal(owner, accounts[0]);
@@ -82,18 +92,19 @@ contract("SimpleOperations", accounts => {
     const critical = false;
 
     // only the owner of the client can add a release
-    try {
-      await operations.addRelease(
-        release,
-        forkBlock,
-        track,
-        semver,
-        critical,
-        { from: accounts[1] },
-      );
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => {
+        await operations.addRelease(
+          release,
+          forkBlock,
+          track,
+          semver,
+          critical,
+          { from: accounts[1] },
+        );
+      },
+      "revert",
+    );
 
     let new_release = await operations.release("parity", release);
     assert.deepEqual(
@@ -141,16 +152,17 @@ contract("SimpleOperations", accounts => {
     const checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
 
     // only the owner of the client can add a checksum
-    try {
-      await operations.addChecksum(
-        release,
-        platform,
-        checksum,
-        { from: accounts[1] },
-      );
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async() => {
+        await operations.addChecksum(
+          release,
+          platform,
+          checksum,
+          { from: accounts[1] },
+        );
+      },
+      "revert",
+    );
 
     let new_checksum = await operations.checksum("parity", release, platform);
     assert.equal(new_checksum, 0);
@@ -227,15 +239,16 @@ contract("SimpleOperations", accounts => {
     const watcher = operations.ClientAdded();
 
     // only the owner of the contract can add a new client
-    try {
-      await operations.addClient(
-        "parity-light",
-        accounts[2],
-        { from: accounts[1] },
-      );
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => {
+        await operations.addClient(
+          "parity-light",
+          accounts[2],
+          { from: accounts[1] },
+        );
+      },
+      "revert",
+    );
 
     let owner = await operations.client("parity-light");
     assert.equal(owner, 0);
@@ -264,15 +277,16 @@ contract("SimpleOperations", accounts => {
     const watcher = operations.ClientOwnerChanged();
 
     // only the owner of the contract can reset the client owner
-    try {
-      await operations.resetClientOwner(
-        "parity-light",
-        accounts[0],
-        { from: accounts[1] },
-      );
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => {
+        await operations.resetClientOwner(
+          "parity-light",
+          accounts[0],
+          { from: accounts[1] },
+        );
+      },
+      "revert",
+    );
 
     const owner = await operations.client("parity-light");
     assert.equal(owner, accounts[2]);
@@ -305,14 +319,15 @@ contract("SimpleOperations", accounts => {
     const watcher = operations.ClientRemoved();
 
     // only the owner of the contract can remove a client
-    try {
-      await operations.removeClient(
-        "parity-light",
-        { from: accounts[1] },
-      );
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => {
+        await operations.removeClient(
+          "parity-light",
+          { from: accounts[1] },
+        );
+      },
+      "revert",
+    );
 
     let owner = await operations.client("parity-light");
     assert.equal(owner, accounts[1]);
@@ -339,11 +354,10 @@ contract("SimpleOperations", accounts => {
     const watcher = operations.ForkRatified();
 
     // only the owner of the contract can set the latest fork
-    try {
-      await operations.setLatestFork(7, { from: accounts[1] });
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => await operations.setLatestFork(7, { from: accounts[1] }),
+      "revert",
+    );
 
     let latestFork = await operations.latestFork();
     assert.equal(latestFork, 0);
@@ -367,11 +381,10 @@ contract("SimpleOperations", accounts => {
     const watcher = operations.OwnerChanged();
 
     // only the owner of the contract can transfer ownership
-    try {
-      await operations.setOwner(accounts[1], { from: accounts[1] });
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => await operations.setOwner(accounts[1], { from: accounts[1] }),
+      "revert",
+    );
 
     let owner = await operations.grandOwner();
     assert.equal(owner, accounts[0]);
@@ -391,11 +404,10 @@ contract("SimpleOperations", accounts => {
     assert.equal(events[0].args.now, accounts[1]);
 
     // the old owner can no longer set a new owner
-    try {
-      await operations.setOwner(accounts[0], { from: accounts[0] });
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => await operations.setOwner(accounts[0], { from: accounts[0] }),
+      "revert",
+    );
   });
 
   it("shouldn't allow the owner of the contract to add duplicate clients", async () => {
@@ -408,11 +420,10 @@ contract("SimpleOperations", accounts => {
     assert.equal(owner, accounts[1]);
 
     // we can't add a client that already exists
-    try {
-      await operations.addClient("parity-light", accounts[2]);
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    };
+    await assertThrowsAsync(
+      async () => await operations.addClient("parity-light", accounts[2]),
+      "revert",
+    );
 
     // client ownership should stay unchanged
     owner = await operations.client("parity-light");
@@ -432,26 +443,23 @@ contract("SimpleOperations", accounts => {
 
     // we can't transfer ownership of the parity-light client to `accounts[0]` since it is already
     // an owner of the parity client
-    try {
-      await operations.setClientOwner(accounts[0], { from: accounts[1] });
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => await operations.setClientOwner(accounts[0], { from: accounts[1] }),
+      "revert",
+    );
 
     // we can't add a new client with `accounts[1]` as its owner since it is already an owner of the
     // parity-light client
-    try {
-      await operations.addClient("parity-lighter", accounts[1]);
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => await operations.addClient("parity-lighter", accounts[1]),
+      "revert",
+    );
 
     // we can't reset the owner of the parity client to `accounts[1]` since it is already an owner
     // of the parity-light client
-    try {
-      await operations.resetClientOwner("parity", accounts[1]);
-    } catch(error) {
-      assert(error.message.includes("revert"));
-    }
+    await assertThrowsAsync(
+      async () => await operations.resetClientOwner("parity", accounts[1]),
+      "revert",
+    );
   });
 });
