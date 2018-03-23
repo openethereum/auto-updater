@@ -422,4 +422,36 @@ contract("SimpleOperations", accounts => {
     const events = await watcher.get();
     assert.equal(events.length, 0);
   });
+
+  it("should prevent an owner from owning multiple clients", async () => {
+    const operations = await SimpleOperations.new();
+
+    await operations.addClient("parity-light", accounts[1]);
+    let owner = await operations.client("parity-light");
+    assert.equal(owner, accounts[1]);
+
+    // we can't transfer ownership of the parity-light client to `accounts[0]` since it is already
+    // an owner of the parity client
+    try {
+      await operations.setClientOwner(accounts[0], { from: accounts[1] });
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    // we can't add a new client with `accounts[1]` as its owner since it is already an owner of the
+    // parity-light client
+    try {
+      await operations.addClient("parity-lighter", accounts[1]);
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+
+    // we can't reset the owner of the parity client to `accounts[1]` since it is already an owner
+    // of the parity-light client
+    try {
+      await operations.resetClientOwner("parity", accounts[1]);
+    } catch(error) {
+      assert(error.message.includes("revert"));
+    }
+  });
 });
