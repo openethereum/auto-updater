@@ -65,6 +65,7 @@ contract SimpleOperations is Operations {
 	function setClientOwner(address _newOwner)
 		public
 		only_client_owner
+		not_client_owner(_newOwner)
 	{
 		var newClient = clientOwner[msg.sender];
 		clientOwner[msg.sender] = bytes32(0);
@@ -121,6 +122,7 @@ contract SimpleOperations is Operations {
 	function addClient(bytes32 _client, address _owner)
 		public
 		only_owner
+		not_client_owner(_owner)
 	{
 		client[_client].owner = _owner;
 		clientOwner[_owner] = _client;
@@ -139,6 +141,7 @@ contract SimpleOperations is Operations {
 	function resetClientOwner(bytes32 _client, address _newOwner)
 		public
 		only_owner
+		not_client_owner(_newOwner)
 	{
 		var old = client[_client].owner;
 		ClientOwnerChanged(_client, old, _newOwner);
@@ -250,6 +253,11 @@ contract SimpleOperations is Operations {
 	modifier only_client_owner {
 		var newClient = clientOwner[msg.sender];
 		require(newClient != 0);
+		_;
+	}
+
+	modifier not_client_owner(address owner) {
+		require(clientOwner[owner] == 0);
 		_;
 	}
 }
