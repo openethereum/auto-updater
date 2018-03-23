@@ -23,25 +23,83 @@ contract Operations {
 	uint8 constant NIGHTLY = 3;
 
 	event Received(address indexed from, uint value, bytes data);
-	event ReleaseAdded(bytes32 indexed client, uint32 indexed forkBlock, bytes32 release, uint8 track, uint24 semver, bool indexed critical);
-	event ChecksumAdded(bytes32 indexed client, bytes32 indexed release, bytes32 indexed platform, bytes32 checksum);
+	event ReleaseAdded(
+		bytes32 indexed client,
+		uint32 indexed forkBlock,
+		bytes32 release,
+		uint8 track,
+		uint24 semver,
+		bool indexed critical
+	);
+	event ChecksumAdded(
+		bytes32 indexed client,
+		bytes32 indexed release,
+		bytes32 indexed platform,
+		bytes32 checksum
+	);
 	event ClientAdded(bytes32 indexed client, address owner);
 	event ClientRemoved(bytes32 indexed client);
 	event ClientOwnerChanged(bytes32 indexed client, address indexed old, address indexed now);
 	event ForkRatified(uint32 indexed forkNumber);
 	event OwnerChanged(address old, address now);
 
-	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public;
-	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public;
+	function addRelease(
+		bytes32 _release,
+		uint32 _forkBlock,
+		uint8 _track,
+		uint24 _semver,
+		bool _critical
+	)
+		public;
 
-	function isLatest(bytes32 _client, bytes32 _release) public view returns (bool);
-	function track(bytes32 _client, bytes32 _release) public view returns (uint8);
-	function latestInTrack(bytes32 _client, uint8 _track) public view returns (bytes32);
-	function build(bytes32 _client, bytes32 _checksum) public view returns (bytes32 o_release, bytes32 o_platform);
-	function release(bytes32 _client, bytes32 _release) public view returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical);
-	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public view returns (bytes32);
-	function latestFork() public view returns (uint32);
+	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
+		public;
 
-	function clientOwner(address _owner) public view returns (bytes32);
-	function setClientOwner(address _newOwner) public;
+	function isLatest(bytes32 _client, bytes32 _release)
+		public
+		view
+		returns (bool);
+
+	function track(bytes32 _client, bytes32 _release)
+		public
+		view
+		returns (uint8);
+
+	function latestInTrack(bytes32 _client, uint8 _track)
+		public
+		view
+		returns (bytes32);
+
+	function build(bytes32 _client, bytes32 _checksum)
+		public
+		view
+		returns (bytes32 o_release, bytes32 o_platform);
+
+	function release(bytes32 _client, bytes32 _release)
+		public
+		view
+		returns (
+			uint32 o_forkBlock,
+			uint8 o_track,
+			uint24 o_semver,
+			bool o_critical
+		);
+
+	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform)
+		public
+		view
+		returns (bytes32);
+
+	function latestFork()
+		public
+		view
+		returns (uint32);
+
+	function clientOwner(address _owner)
+		public
+		view
+		returns (bytes32);
+
+	function setClientOwner(address _newOwner)
+		public;
 }

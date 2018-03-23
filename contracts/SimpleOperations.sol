@@ -46,18 +46,26 @@ contract SimpleOperations is Operations {
 	uint32 public latestFork = 0;
 	address public grandOwner = msg.sender;
 
-	function SimpleOperations() public {
+	function SimpleOperations()
+		public
+	{
 		client["parity"] = Client(msg.sender);
 		clientOwner[msg.sender] = "parity";
 	}
 
-	function() public payable {
+	function()
+		public
+		payable
+	{
 		Received(msg.sender, msg.value, msg.data);
 	}
 
 	// Functions for client owners
 
-	function setClientOwner(address _newOwner) public only_client_owner {
+	function setClientOwner(address _newOwner)
+		public
+		only_client_owner
+	{
 		var newClient = clientOwner[msg.sender];
 		clientOwner[msg.sender] = bytes32(0);
 		clientOwner[_newOwner] = newClient;
@@ -65,35 +73,73 @@ contract SimpleOperations is Operations {
 		ClientOwnerChanged(newClient, msg.sender, _newOwner);
 	}
 
-	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public only_client_owner {
+	function addRelease(
+		bytes32 _release,
+		uint32 _forkBlock,
+		uint8 _track,
+		uint24 _semver,
+		bool _critical
+	)
+		public
+		only_client_owner
+	{
 		var newClient = clientOwner[msg.sender];
-		client[newClient].release[_release] = Release(_forkBlock, _track, _semver, _critical);
+		client[newClient].release[_release] = Release(
+			_forkBlock,
+			_track,
+			_semver,
+			_critical
+		);
 		client[newClient].current[_track] = _release;
-		ReleaseAdded(newClient, _forkBlock, _release, _track, _semver, _critical);
+		ReleaseAdded(
+			newClient,
+			_forkBlock,
+			_release,
+			_track,
+			_semver,
+			_critical
+		);
 	}
 
-	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public only_client_owner {
+	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
+		public
+		only_client_owner
+	{
 		var newClient = clientOwner[msg.sender];
 		client[newClient].build[_checksum] = Build(_release, _platform);
 		client[newClient].release[_release].checksum[_platform] = _checksum;
-		ChecksumAdded(newClient, _release, _platform, _checksum);
+		ChecksumAdded(
+			newClient,
+			_release,
+			_platform,
+			_checksum
+		);
 	}
 
 	// Admin functions
 
-	function addClient(bytes32 _client, address _owner) public only_owner {
+	function addClient(bytes32 _client, address _owner)
+		public
+		only_owner
+	{
 		client[_client].owner = _owner;
 		clientOwner[_owner] = _client;
 		ClientAdded(_client, _owner);
 	}
 
-	function removeClient(bytes32 _client) public only_owner {
+	function removeClient(bytes32 _client)
+		public
+		only_owner
+	{
 		resetClientOwner(_client, 0);
 		delete client[_client];
 		ClientRemoved(_client);
 	}
 
-	function resetClientOwner(bytes32 _client, address _newOwner) public only_owner {
+	function resetClientOwner(bytes32 _client, address _newOwner)
+		public
+		only_owner
+	{
 		var old = client[_client].owner;
 		ClientOwnerChanged(_client, old, _newOwner);
 		clientOwner[old] = bytes32(0);
@@ -101,37 +147,68 @@ contract SimpleOperations is Operations {
 		client[_client].owner = _newOwner;
 	}
 
-	function setLatestFork(uint32 _forkNumber) public only_owner {
+	function setLatestFork(uint32 _forkNumber)
+		public
+		only_owner
+	{
 		ForkRatified(_forkNumber);
 		latestFork = _forkNumber;
 	}
 
-	function setOwner(address _newOwner) public only_owner {
+	function setOwner(address _newOwner)
+		public
+		only_owner
+	{
 		OwnerChanged(grandOwner, _newOwner);
 		grandOwner = _newOwner;
 	}
 
 	// Getters
 
-	function isLatest(bytes32 _client, bytes32 _release) public view returns (bool) {
+	function isLatest(bytes32 _client, bytes32 _release)
+		public
+		view
+		returns (bool)
+	{
 		return latestInTrack(_client, track(_client, _release)) == _release;
 	}
 
-	function track(bytes32 _client, bytes32 _release) public view returns (uint8) {
+	function track(bytes32 _client, bytes32 _release)
+		public
+		view
+		returns (uint8)
+	{
 		return client[_client].release[_release].track;
 	}
 
-	function latestInTrack(bytes32 _client, uint8 _track) public view returns (bytes32) {
+	function latestInTrack(bytes32 _client, uint8 _track)
+		public
+		view
+		returns (bytes32)
+	{
 		return client[_client].current[_track];
 	}
 
-	function build(bytes32 _client, bytes32 _checksum) public view returns (bytes32 o_release, bytes32 o_platform) {
+	function build(bytes32 _client, bytes32 _checksum)
+		public
+		view
+		returns (bytes32 o_release, bytes32 o_platform)
+	{
 		var b = client[_client].build[_checksum];
 		o_release = b.release;
 		o_platform = b.platform;
 	}
 
-	function release(bytes32 _client, bytes32 _release) public view returns (uint32 o_forkBlock, uint8 o_track, uint24 o_semver, bool o_critical) {
+	function release(bytes32 _client, bytes32 _release)
+		public
+		view
+		returns (
+			uint32 o_forkBlock,
+			uint8 o_track,
+			uint24 o_semver,
+			bool o_critical
+		)
+	{
 		var b = client[_client].release[_release];
 		o_forkBlock = b.forkBlock;
 		o_track = b.track;
@@ -139,15 +216,27 @@ contract SimpleOperations is Operations {
 		o_critical = b.critical;
 	}
 
-	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform) public view returns (bytes32) {
+	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform)
+		public
+		view
+		returns (bytes32)
+	{
 		return client[_client].release[_release].checksum[_platform];
 	}
 
-	function latestFork() public view returns (uint32) {
+	function latestFork()
+		public
+		view
+		returns (uint32)
+	{
 		return latestFork;
 	}
 
-	function clientOwner(address _owner) public view returns (bytes32) {
+	function clientOwner(address _owner)
+		public
+		view
+		returns (bytes32)
+	{
 		return clientOwner[_owner];
 	}
 

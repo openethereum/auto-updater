@@ -39,7 +39,18 @@ contract OperationsProxy {
 	event RequestConfirmed(uint8 indexed track, bytes32 hash);
 	event RequestRejected(uint8 indexed track, bytes32 hash);
 
-	function OperationsProxy(address _owner, address _stable, address _beta, address _nightly, address _stableConfirmer, address _betaConfirmer, address _nightlyConfirmer, address _operations) public {
+	function OperationsProxy(
+		address _owner,
+		address _stable,
+		address _beta,
+		address _nightly,
+		address _stableConfirmer,
+		address _betaConfirmer,
+		address _nightlyConfirmer,
+		address _operations
+	)
+		public
+	{
 		owner = _owner;
 		delegate[1] = _stable;
 		delegate[2] = _beta;
@@ -50,39 +61,65 @@ contract OperationsProxy {
 		operations = Operations(_operations);
 	}
 
-	function() public only_owner {
+	function()
+		public
+		only_owner
+	{
 		relay();
 	}
 
-	function send(address _to, uint _value, bytes _data) public payable only_owner {
+	function send(address _to, uint _value, bytes _data)
+		public
+		payable
+		only_owner
+	{
 		// solium-disable-next-line security/no-call-value
 		require(_to.call.value(_value)(_data));
 		Sent(_to, _value, _data);
 	}
 
-	function setOwner(address _owner) public only_owner {
+	function setOwner(address _owner)
+		public
+		only_owner
+	{
 		OwnerChanged(owner, _owner);
 		owner = _owner;
 	}
 
-	function setDelegate(address _delegate, uint8 _track) public only_owner {
+	function setDelegate(address _delegate, uint8 _track)
+		public
+		only_owner
+	{
 		DelegateChanged(delegate[_track], _delegate, _track);
 		delegate[_track] = _delegate;
 	}
 
-	function setConfirmer(address _confirmer, uint8 _track) public only_owner {
+	function setConfirmer(address _confirmer, uint8 _track)
+		public
+		only_owner
+	{
 		ConfirmerChanged(confirmer[_track], _confirmer, _track);
 		confirmer[_track] = _confirmer;
 	}
 
-	function addRelease(bytes32 _release, uint32 _forkBlock, uint8 _track, uint24 _semver, bool _critical) public {
+	function addRelease(
+		bytes32 _release,
+		uint32 _forkBlock,
+		uint8 _track,
+		uint24 _semver,
+		bool _critical
+	)
+		public
+	{
 		if (relayOrConfirm(_track))
 			AddReleaseRelayed(_track, _release);
 		else
 			trackOfPendingRelease[_release] = _track;
 	}
 
-	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum) public {
+	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
+		public
+	{
 		var track = trackOfPendingRelease[_release];
 		if (track == 0)
 			track = operations.track(operations.clientOwner(this), _release);
@@ -90,19 +127,29 @@ contract OperationsProxy {
 			AddChecksumRelayed(_release, _platform);
 	}
 
-	function confirm(uint8 _track, bytes32 _hash) public payable only_confirmer_of_track(_track) {
+	function confirm(uint8 _track, bytes32 _hash)
+		public
+		payable
+		only_confirmer_of_track(_track)
+	{
 		// solium-disable-next-line security/no-call-value
 		require(address(operations).call.value(msg.value)(waiting[_track][_hash]));
 		delete waiting[_track][_hash];
 		RequestConfirmed(_track, _hash);
 	}
 
-	function reject(uint8 _track, bytes32 _hash) public only_confirmer_of_track(_track) {
+	function reject(uint8 _track, bytes32 _hash)
+		public
+		only_confirmer_of_track(_track)
+	{
 		delete waiting[_track][_hash];
 		RequestRejected(_track, _hash);
 	}
 
-	function cleanupRelease(bytes32 _release) public only_confirmer_of_track(trackOfPendingRelease[_release]) {
+	function cleanupRelease(bytes32 _release)
+		public
+		only_confirmer_of_track(trackOfPendingRelease[_release])
+	{
 		delete trackOfPendingRelease[_release];
 	}
 
@@ -110,20 +157,25 @@ contract OperationsProxy {
 		selfdestruct(msg.sender);
 	}
 
-	function relayOrConfirm(uint8 _track) internal only_delegate_of_track(_track) returns (bool) {
+	function relayOrConfirm(uint8 _track)
+		internal
+		only_delegate_of_track(_track)
+		returns (bool)
+	{
 		if (confirmer[_track] != 0) {
 			var h = keccak256(msg.data);
 			waiting[_track][h] = msg.data;
 			NewRequestWaiting(_track, h);
 			return false;
-		}
-		else {
+		} else {
 			relay();
 			return true;
 		}
 	}
 
-	function relay() internal {
+	function relay()
+		internal
+	{
 		// solium-disable-next-line security/no-call-value
 		require(address(operations).call.value(msg.value)(msg.data));
 	}
