@@ -1,20 +1,11 @@
 "use strict";
 
 const { step } = require("mocha-steps");
+const { assertThrowsAsync } = require("./utils.js");
 
 const SimpleOperations = artifacts.require("./SimpleOperations.sol");
 
 contract("SimpleOperations", accounts => {
-  const assertThrowsAsync = async (fn, msg) => {
-    try {
-      await fn();
-    } catch (err) {
-      assert(err.message.includes(msg), "Expected error to include: " + msg);
-      return;
-    }
-    assert.fail("Expected fn to throw");
-  };
-
   it("should initialize the contract with the parity client", async () => {
     const operations = await SimpleOperations.deployed();
     const owner = await operations.client("parity");
