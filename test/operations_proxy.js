@@ -79,4 +79,94 @@ contract("OperationsProxy", accounts => {
     assert.equal(events.length, 1);
     assert.equal(events[0].args.forkNumber.valueOf(), 100);
   });
+
+  it("should allow the owner of the contract to transfer ownership of the contract", async () => {
+    let [operations, operations_proxy] = await deploy_operations_proxy();
+    const watcher = operations_proxy.OwnerChanged();
+
+    // only the owner of the contract can transfer ownership
+    await assertThrowsAsync(
+      () => operations_proxy.setOwner(accounts[1], { from: accounts[1] }),
+      "revert",
+    );
+
+    let owner = await operations_proxy.owner();
+    assert.equal(owner, accounts[0]);
+
+    // we successfully transfer ownership of the contract
+    await operations_proxy.setOwner(accounts[1]);
+
+    // the `owner` should point to the new owner
+    owner = await operations_proxy.owner();
+    assert.equal(owner, accounts[1]);
+
+    // it should emit a `OwnerChanged` event
+    const events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.was, accounts[0]);
+    assert.equal(events[0].args.who, accounts[1]);
+
+    // the old owner can no longer set a new owner
+    await assertThrowsAsync(
+      () => operations_proxy.setOwner(accounts[0], { from: accounts[0] }),
+      "revert",
+    );
+  });
+
+  it("should allow the owner of the contract to set track delegate", async () => {
+    let [operations, operations_proxy] = await deploy_operations_proxy();
+    const watcher = operations_proxy.DelegateChanged();
+
+    // only the owner of the contract can set a track delegate
+    await assertThrowsAsync(
+      () => operations_proxy.setDelegate(accounts[9], 1, { from: accounts[1] }),
+      "revert",
+    );
+
+    let delegate = await operations_proxy.delegate(1);
+    assert.equal(delegate, accounts[1]);
+
+    // we successfully change the delegate for the stable track
+    await operations_proxy.setDelegate(accounts[9], 1);
+
+    // the `delegate` for the stable track should point to the new delegate
+    delegate = await operations_proxy.delegate(1);
+    assert.equal(delegate, accounts[9]);
+
+    // it should emit a `DelegateChanged` event
+    const events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.was, accounts[1]);
+    assert.equal(events[0].args.who, accounts[9]);
+  });
+
+  it("should allow the owner of the contract to set track confirmer", async () => {
+    let [operations, operations_proxy] = await deploy_operations_proxy();
+    const watcher = operations_proxy.ConfirmerChanged();
+
+    // only the owner of the contract can set a track confirmer
+    await assertThrowsAsync(
+      () => operations_proxy.setConfirmer(accounts[9], 1, { from: accounts[1] }),
+      "revert",
+    );
+
+    let confirmer = await operations_proxy.confirmer(1);
+    assert.equal(confirmer, accounts[4]);
+
+    // we successfully change the confirmer for the stable track
+    await operations_proxy.setConfirmer(accounts[9], 1);
+
+    // the `confirmer` for the stable track should point to the new confirmer
+    confirmer = await operations_proxy.confirmer(1);
+    assert.equal(confirmer, accounts[9]);
+
+    // it should emit a `ConfirmerChanged` event
+    const events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.was, accounts[4]);
+    assert.equal(events[0].args.who, accounts[9]);
+  });
 });
