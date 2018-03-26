@@ -32,8 +32,6 @@ contract OperationsProxy {
 	event OwnerChanged(address indexed was, address indexed who);
 	event DelegateChanged(address indexed was, address indexed who, uint8 indexed track);
 	event ConfirmerChanged(address indexed was, address indexed who, uint8 indexed track);
-	event AddReleaseRelayed(uint8 indexed track, bytes32 indexed release);
-	event AddChecksumRelayed(bytes32 indexed release, bytes32 indexed _platform);
 	event NewRequestWaiting(uint8 indexed track, bytes32 hash);
 	event RequestConfirmed(uint8 indexed track, bytes32 hash);
 	event RequestRejected(uint8 indexed track, bytes32 hash);
@@ -64,7 +62,8 @@ contract OperationsProxy {
 		public
 		only_owner
 	{
-		relay();
+		// solium-disable-next-line security/no-call-value
+		require(address(operations).call.value(msg.value)(msg.data));
 	}
 
 	function setOwner(address _owner)
@@ -100,10 +99,8 @@ contract OperationsProxy {
 	)
 		public
 	{
-		if (relayOrConfirm(_track))
-			AddReleaseRelayed(_track, _release);
-		else
-			trackOfPendingRelease[_release] = _track;
+		addRequest(_track);
+		trackOfPendingRelease[_release] = _track;
 	}
 
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
@@ -112,8 +109,7 @@ contract OperationsProxy {
 		var track = trackOfPendingRelease[_release];
 		if (track == 0)
 			track = operations.track(operations.clientOwner(this), _release);
-		if (relayOrConfirm(track))
-			AddChecksumRelayed(_release, _platform);
+		addRequest(track);
 	}
 
 	function confirm(uint8 _track, bytes32 _hash)
@@ -146,27 +142,14 @@ contract OperationsProxy {
 		selfdestruct(msg.sender);
 	}
 
-	function relayOrConfirm(uint8 _track)
+	function addRequest(uint8 _track)
 		internal
 		only_delegate_of_track(_track)
-		returns (bool)
 	{
-		if (confirmer[_track] != 0) {
-			var h = keccak256(msg.data);
-			waiting[_track][h] = msg.data;
-			NewRequestWaiting(_track, h);
-			return false;
-		} else {
-			relay();
-			return true;
-		}
-	}
-
-	function relay()
-		internal
-	{
-		// solium-disable-next-line security/no-call-value
-		require(address(operations).call.value(msg.value)(msg.data));
+		require(confirmer[_track] != 0);
+		var h = keccak256(msg.data);
+		waiting[_track][h] = msg.data;
+		NewRequestWaiting(_track, h);
 	}
 
 	modifier only_owner {
