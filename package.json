@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
+    "ethereumjs-abi": "^0.6.5",
     "ganache-cli": "^6.1.0",
     "mocha-steps": "^1.1.0",
     "solidity-coverage": "^0.4.13",

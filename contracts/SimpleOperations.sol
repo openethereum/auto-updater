@@ -239,6 +239,7 @@ contract SimpleOperations is Operations {
 
 	function releaseExists(bytes32 _client, bytes32 _release)
 		internal
+		view
 		returns (bool)
 	{
 		var releas = client[_client].release[_release];

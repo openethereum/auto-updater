@@ -1,5 +1,6 @@
 "use strict";
 
+const abi = require("ethereumjs-abi");
 const { step } = require("mocha-steps");
 const { assertThrowsAsync } = require("./utils.js");
 
@@ -7,11 +8,11 @@ const SimpleOperations = artifacts.require("./SimpleOperations.sol");
 const OperationsProxy = artifacts.require("./OperationsProxy.sol");
 
 contract("OperationsProxy", accounts => {
-  const deploy_operations_proxy = async (deployed_operations = true) => {
+  const deploy_operations_proxy = async (deploy_operations = false) => {
     const operations =
-          deployed_operations?
-          await SimpleOperations.deployed() :
-          await SimpleOperations.new();
+          deploy_operations?
+          await SimpleOperations.new():
+          await SimpleOperations.deployed();
 
     const operations_proxy =
           await OperationsProxy.new(
@@ -44,5 +45,38 @@ contract("OperationsProxy", accounts => {
     assert.equal(accounts[4], await operations_proxy.confirmer(1));
     assert.equal(accounts[5], await operations_proxy.confirmer(2));
     assert.equal(accounts[6], await operations_proxy.confirmer(3));
+  });
+
+  it("should relay calls to the `Operations` contract on fallback", async () => {
+    let [operations, operations_proxy] = await deploy_operations_proxy(true);
+    const watcher = operations.ForkRatified();
+
+    // set the operations proxy contract as the owner of the simple operations contract
+    // to allow calling `setLatestFork`
+    await operations.setOwner(operations_proxy.address);
+
+    // encode call to Operations `setLatestFork`
+    const encoded = abi.simpleEncode("setLatestFork(uint32)", 100).toString("hex");
+
+    // only the owner of the operations proxy can use the fallback function
+    await assertThrowsAsync(
+      () => operations_proxy.sendTransaction({
+        from: accounts[1],
+        data: encoded,
+      }),
+      "revert",
+    );
+
+    // the unsupported call is relayed to the Operations contract
+    let client = await operations_proxy.sendTransaction({
+      from: accounts[0],
+      data: encoded,
+    });
+
+    // if successful the operations contract should emit a `ForkRatified` event
+    const events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.forkNumber.valueOf(), 100);
   });
 });
