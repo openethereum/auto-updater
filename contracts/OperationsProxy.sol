@@ -25,8 +25,11 @@ contract OperationsProxy {
 	address public owner;
 	mapping(uint8 => address) public delegate;
 	mapping(uint8 => address) public confirmer;
+
 	mapping(uint8 => mapping(bytes32 => bytes)) public waiting;
+	mapping(bytes32 => bytes32) public pendingRelease;
 	mapping(bytes32 => uint8) public trackOfPendingRelease;
+
 	Operations public operations;
 
 	event OwnerChanged(address indexed was, address indexed who);
@@ -99,7 +102,9 @@ contract OperationsProxy {
 	)
 		public
 	{
-		addRequest(_track);
+		var hash = addRequest(_track);
+
+		pendingRelease[hash] = _release;
 		trackOfPendingRelease[_release] = _track;
 	}
 
@@ -120,6 +125,8 @@ contract OperationsProxy {
 		var success = address(operations).call(waiting[_track][_hash]);
 		delete waiting[_track][_hash];
 		RequestConfirmed(_track, _hash, success);
+
+		cleanupRelease(_track, _hash);
 	}
 
 	function reject(uint8 _track, bytes32 _hash)
@@ -128,23 +135,36 @@ contract OperationsProxy {
 	{
 		delete waiting[_track][_hash];
 		RequestRejected(_track, _hash);
+
+		cleanupRelease(_track, _hash);
 	}
 
-	function cleanupRelease(bytes32 _release)
-		public
-		only_confirmer_of_track(trackOfPendingRelease[_release])
+	function cleanupRelease(uint8 _track, bytes32 _hash)
+		internal
 	{
-		delete trackOfPendingRelease[_release];
+		var release = pendingRelease[_hash];
+		if (release != 0) {
+			delete pendingRelease[_hash];
+		}
+
+		var track = trackOfPendingRelease[release];
+		if (track == _track) {
+			delete trackOfPendingRelease[release];
+		}
 	}
 
 	function addRequest(uint8 _track)
 		internal
 		only_delegate_of_track(_track)
+		returns (bytes32)
 	{
 		require(confirmer[_track] != 0);
-		var h = keccak256(msg.data);
-		waiting[_track][h] = msg.data;
-		NewRequestWaiting(_track, h);
+
+		var hash = keccak256(msg.data);
+		waiting[_track][hash] = msg.data;
+		NewRequestWaiting(_track, hash);
+
+		return hash;
 	}
 
 	modifier only_owner {
