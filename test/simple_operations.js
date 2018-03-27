@@ -5,15 +5,14 @@ const { step } = require("mocha-steps");
 const SimpleOperations = artifacts.require("./SimpleOperations.sol");
 
 contract("SimpleOperations", accounts => {
-  const assertThrowsAsync = async (fn, matcher) => {
-    let f = () => {};
+  const assertThrowsAsync = async (fn, msg) => {
     try {
       await fn();
-    } catch(e) {
-      f = () => { throw e; };
-    } finally {
-      assert.throws(f, matcher);
+    } catch (err) {
+      assert(err.message.includes(msg), "Expected error to include: " + msg);
+      return;
     }
+    assert.fail('Expected fn to throw');
   };
 
   it("should initialize the contract with the parity client", async () => {
@@ -51,7 +50,7 @@ contract("SimpleOperations", accounts => {
 
     // only the owner of the client can transfer ownership
     await assertThrowsAsync(
-      async() => await operations.setClientOwner(accounts[2], { from: accounts[1] }),
+      () => operations.setClientOwner(accounts[2], { from: accounts[1] }),
       "revert",
     );
 
@@ -93,16 +92,14 @@ contract("SimpleOperations", accounts => {
 
     // only the owner of the client can add a release
     await assertThrowsAsync(
-      async () => {
-        await operations.addRelease(
-          release,
-          forkBlock,
-          track,
-          semver,
-          critical,
-          { from: accounts[1] },
-        );
-      },
+      () => operations.addRelease(
+        release,
+        forkBlock,
+        track,
+        semver,
+        critical,
+        { from: accounts[1] },
+      ),
       "revert",
     );
 
@@ -153,14 +150,12 @@ contract("SimpleOperations", accounts => {
 
     // only the owner of the client can add a checksum
     await assertThrowsAsync(
-      async() => {
-        await operations.addChecksum(
-          release,
-          platform,
-          checksum,
-          { from: accounts[1] },
-        );
-      },
+      () => operations.addChecksum(
+        release,
+        platform,
+        checksum,
+        { from: accounts[1] },
+      ),
       "revert",
     );
 
@@ -240,13 +235,11 @@ contract("SimpleOperations", accounts => {
 
     // only the owner of the contract can add a new client
     await assertThrowsAsync(
-      async () => {
-        await operations.addClient(
-          "parity-light",
-          accounts[2],
-          { from: accounts[1] },
-        );
-      },
+      () => operations.addClient(
+        "parity-light",
+        accounts[2],
+        { from: accounts[1] },
+      ),
       "revert",
     );
 
@@ -278,13 +271,11 @@ contract("SimpleOperations", accounts => {
 
     // only the owner of the contract can reset the client owner
     await assertThrowsAsync(
-      async () => {
-        await operations.resetClientOwner(
-          "parity-light",
-          accounts[0],
-          { from: accounts[1] },
-        );
-      },
+      () => operations.resetClientOwner(
+        "parity-light",
+        accounts[0],
+        { from: accounts[1] },
+      ),
       "revert",
     );
 
@@ -320,12 +311,10 @@ contract("SimpleOperations", accounts => {
 
     // only the owner of the contract can remove a client
     await assertThrowsAsync(
-      async () => {
-        await operations.removeClient(
-          "parity-light",
-          { from: accounts[1] },
-        );
-      },
+      () => operations.removeClient(
+        "parity-light",
+        { from: accounts[1] },
+      ),
       "revert",
     );
 
@@ -355,7 +344,7 @@ contract("SimpleOperations", accounts => {
 
     // only the owner of the contract can set the latest fork
     await assertThrowsAsync(
-      async () => await operations.setLatestFork(7, { from: accounts[1] }),
+      () => operations.setLatestFork(7, { from: accounts[1] }),
       "revert",
     );
 
@@ -382,7 +371,7 @@ contract("SimpleOperations", accounts => {
 
     // only the owner of the contract can transfer ownership
     await assertThrowsAsync(
-      async () => await operations.setOwner(accounts[1], { from: accounts[1] }),
+      () => operations.setOwner(accounts[1], { from: accounts[1] }),
       "revert",
     );
 
@@ -405,7 +394,7 @@ contract("SimpleOperations", accounts => {
 
     // the old owner can no longer set a new owner
     await assertThrowsAsync(
-      async () => await operations.setOwner(accounts[0], { from: accounts[0] }),
+      () => operations.setOwner(accounts[0], { from: accounts[0] }),
       "revert",
     );
   });
@@ -421,7 +410,7 @@ contract("SimpleOperations", accounts => {
 
     // we can't add a client that already exists
     await assertThrowsAsync(
-      async () => await operations.addClient("parity-light", accounts[2]),
+      () => operations.addClient("parity-light", accounts[2]),
       "revert",
     );
 
@@ -444,21 +433,21 @@ contract("SimpleOperations", accounts => {
     // we can't transfer ownership of the parity-light client to `accounts[0]` since it is already
     // an owner of the parity client
     await assertThrowsAsync(
-      async () => await operations.setClientOwner(accounts[0], { from: accounts[1] }),
+      () => operations.setClientOwner(accounts[0], { from: accounts[1] }),
       "revert",
     );
 
     // we can't add a new client with `accounts[1]` as its owner since it is already an owner of the
     // parity-light client
     await assertThrowsAsync(
-      async () => await operations.addClient("parity-lighter", accounts[1]),
+      () => operations.addClient("parity-lighter", accounts[1]),
       "revert",
     );
 
     // we can't reset the owner of the parity client to `accounts[1]` since it is already an owner
     // of the parity-light client
     await assertThrowsAsync(
-      async () => await operations.resetClientOwner("parity", accounts[1]),
+      () => operations.resetClientOwner("parity", accounts[1]),
       "revert",
     );
   });
