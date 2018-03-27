@@ -29,7 +29,6 @@ contract OperationsProxy {
 	mapping(bytes32 => uint8) public trackOfPendingRelease;
 	Operations public operations;
 
-	event Sent(address indexed to, uint value, bytes data);
 	event OwnerChanged(address indexed was, address indexed who);
 	event DelegateChanged(address indexed was, address indexed who, uint8 indexed track);
 	event ConfirmerChanged(address indexed was, address indexed who, uint8 indexed track);
@@ -66,16 +65,6 @@ contract OperationsProxy {
 		only_owner
 	{
 		relay();
-	}
-
-	function send(address _to, uint _value, bytes _data)
-		public
-		payable
-		only_owner
-	{
-		// solium-disable-next-line security/no-call-value
-		require(_to.call.value(_value)(_data));
-		Sent(_to, _value, _data);
 	}
 
 	function setOwner(address _owner)
