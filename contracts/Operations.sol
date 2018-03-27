@@ -36,9 +36,6 @@ contract Operations {
 		bytes32 indexed platform,
 		bytes32 checksum
 	);
-	event ClientAdded(bytes32 indexed client, address owner);
-	event ClientRemoved(bytes32 indexed client);
-	event ClientOwnerChanged(bytes32 indexed client, address indexed old, address indexed now);
 	event ForkRatified(uint32 indexed forkNumber);
 	event OwnerChanged(address old, address now);
 

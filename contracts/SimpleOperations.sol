@@ -61,10 +61,10 @@ contract SimpleOperations is Operations {
 		not_client_owner(_newOwner)
 	{
 		var newClient = clientOwner[msg.sender];
-		clientOwner[msg.sender] = bytes32(0);
+		delete clientOwner[msg.sender];
+
 		clientOwner[_newOwner] = newClient;
 		client[newClient].owner = _newOwner;
-		ClientOwnerChanged(newClient, msg.sender, _newOwner);
 	}
 
 	/// Adds a release which is identified by `_release`. When a release is succesfully added, a
@@ -120,37 +120,25 @@ contract SimpleOperations is Operations {
 
 	// Admin functions
 
-	function addClient(bytes32 _client, address _owner)
+	function setClient(bytes32 _client, address _owner)
 		public
 		only_owner
 		not_client_owner(_owner)
 	{
-		// we can't add a client that already exists
-		require(client[_client].owner == 0);
-		client[_client].owner = _owner;
+		var owner = client[_client].owner;
+		delete clientOwner[owner];
+
 		clientOwner[_owner] = _client;
-		ClientAdded(_client, _owner);
+		client[_client].owner = _owner;
 	}
 
 	function removeClient(bytes32 _client)
 		public
 		only_owner
 	{
-		resetClientOwner(_client, 0);
+		var owner = client[_client].owner;
+		delete clientOwner[owner];
 		delete client[_client];
-		ClientRemoved(_client);
-	}
-
-	function resetClientOwner(bytes32 _client, address _newOwner)
-		public
-		only_owner
-		not_client_owner(_newOwner)
-	{
-		var old = client[_client].owner;
-		ClientOwnerChanged(_client, old, _newOwner);
-		clientOwner[old] = bytes32(0);
-		clientOwner[_newOwner] = _client;
-		client[_client].owner = _newOwner;
 	}
 
 	function setLatestFork(uint32 _forkNumber)
