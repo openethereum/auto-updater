@@ -28,7 +28,6 @@ contract("SimpleOperations", accounts => {
 
   it("should allow the owner of a client to transfer ownership", async () => {
     const operations = await SimpleOperations.new();
-    const watcher = operations.ClientOwnerChanged();
 
     // only the owner of the client can transfer ownership
     await assertThrowsAsync(
@@ -52,14 +51,6 @@ contract("SimpleOperations", accounts => {
     // the old owner should no longer exist in `clientOwner`
     const old_client = await operations.clientOwner(accounts[0]);
     assert.equal(old_client.valueOf(), 0);
-
-    // it should emit a `ClientOwnerChanged` event
-    const events = await watcher.get();
-
-    assert.equal(events.length, 1);
-    assert.equal(web3.toUtf8(events[0].args.client), "parity");
-    assert.equal(events[0].args.old, accounts[0]);
-    assert.equal(events[0].args.now, accounts[1]);
   });
 
   step("should allow the owner of a client to add a release", async () => {
@@ -211,13 +202,12 @@ contract("SimpleOperations", accounts => {
     }
   });
 
-  step("should allow the owner of the contract to add a client", async () => {
+  step("should allow the owner of the contract to add/set a client", async () => {
     const operations = await SimpleOperations.deployed();
-    const watcher = operations.ClientAdded();
 
-    // only the owner of the contract can add a new client
+    // only the owner of the contract can set a client
     await assertThrowsAsync(
-      () => operations.addClient(
+      () => operations.setClient(
         "parity-light",
         accounts[2],
         { from: accounts[1] },
@@ -228,68 +218,33 @@ contract("SimpleOperations", accounts => {
     let owner = await operations.client("parity-light");
     assert.equal(owner, 0);
 
-    // we successfully add a new client
-    await operations.addClient("parity-light", accounts[2]);
+    // we successfully set a new client
+    await operations.setClient("parity-light", accounts[2]);
 
     owner = await operations.client("parity-light");
-
     assert.equal(owner, accounts[2]);
 
     // `accounts[2]` should be set as the owner of the parity-light client
-    const client = await operations.clientOwner(accounts[2]);
+    let client = await operations.clientOwner(accounts[2]);
     assert.equal(web3.toUtf8(client), "parity-light");
 
-    // it should emit a `ClientAdded` event
-    const events = await watcher.get();
+    // we update the parity-light client owner
+    await operations.setClient("parity-light", accounts[1]);
 
-    assert.equal(events.length, 1);
-    assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
-    assert.equal(events[0].args.owner, owner);
-  });
+    owner = await operations.client("parity-light");
+    assert.equal(owner, accounts[1]);
 
-  step("should allow the owner of the contract to reset the client owner", async () => {
-    const operations = await SimpleOperations.deployed();
-    const watcher = operations.ClientOwnerChanged();
-
-    // only the owner of the contract can reset the client owner
-    await assertThrowsAsync(
-      () => operations.resetClientOwner(
-        "parity-light",
-        accounts[0],
-        { from: accounts[1] },
-      ),
-      "revert",
-    );
-
-    const owner = await operations.client("parity-light");
-    assert.equal(owner, accounts[2]);
-
-    // we successfully reset ownership of the parity-light client
-    await operations.resetClientOwner("parity-light", accounts[1]);
-
-    // the `client` and `clientOwner` should point to the new owner
-    const new_owner = await operations.client("parity-light");
-    assert.equal(new_owner, accounts[1]);
-
-    const client = await operations.clientOwner(accounts[1]);
+    // `accounts[1]` should be set as the owner of the parity-light client
+    client = await operations.clientOwner(accounts[1]);
     assert.equal(web3.toUtf8(client), "parity-light");
 
-    // the old owner should no longer exist in `clientOwner`
+    // `accounts[2]` should no longer exist in `clientOwner`
     const old_client = await operations.clientOwner(accounts[2]);
     assert.equal(old_client.valueOf(), 0);
-
-    // it should emit a `ClientOwnerChanged` event
-    const events = await watcher.get();
-
-    assert.equal(events.length, 1);
-    assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
-    assert.equal(events[0].args.old, accounts[2]);
-    assert.equal(events[0].args.now, accounts[1]);
   });
 
   step("should allow the owner of the contract to remove a client", async () => {
     const operations = await SimpleOperations.deployed();
-    const watcher = operations.ClientRemoved();
 
     // only the owner of the contract can remove a client
     await assertThrowsAsync(
@@ -312,12 +267,6 @@ contract("SimpleOperations", accounts => {
     // `accounts[2]` should not be set as a client owner
     const client = await operations.clientOwner(accounts[2]);
     assert.equal(client, 0);
-
-    // it should emit a `ClientRemoved` event
-    const events = await watcher.get();
-
-    assert.equal(events.length, 1);
-    assert.equal(web3.toUtf8(events[0].args.client), "parity-light");
   });
 
   it("should allow the owner of the contract to set the latest supported fork", async () => {
@@ -381,34 +330,10 @@ contract("SimpleOperations", accounts => {
     );
   });
 
-  it("shouldn't allow the owner of the contract to add duplicate clients", async () => {
-    const operations = await SimpleOperations.new();
-    const watcher = operations.ClientAdded();
-
-    // we successfully add a new client
-    await operations.addClient("parity-light", accounts[1]);
-    let owner = await operations.client("parity-light");
-    assert.equal(owner, accounts[1]);
-
-    // we can't add a client that already exists
-    await assertThrowsAsync(
-      () => operations.addClient("parity-light", accounts[2]),
-      "revert",
-    );
-
-    // client ownership should stay unchanged
-    owner = await operations.client("parity-light");
-    assert.equal(owner, accounts[1]);
-
-    // No event should be emitted
-    const events = await watcher.get();
-    assert.equal(events.length, 0);
-  });
-
   it("should prevent an owner from owning multiple clients", async () => {
     const operations = await SimpleOperations.new();
 
-    await operations.addClient("parity-light", accounts[1]);
+    await operations.setClient("parity-light", accounts[1]);
     let owner = await operations.client("parity-light");
     assert.equal(owner, accounts[1]);
 
@@ -422,14 +347,7 @@ contract("SimpleOperations", accounts => {
     // we can't add a new client with `accounts[1]` as its owner since it is already an owner of the
     // parity-light client
     await assertThrowsAsync(
-      () => operations.addClient("parity-lighter", accounts[1]),
-      "revert",
-    );
-
-    // we can't reset the owner of the parity client to `accounts[1]` since it is already an owner
-    // of the parity-light client
-    await assertThrowsAsync(
-      () => operations.resetClientOwner("parity", accounts[1]),
+      () => operations.setClient("parity-lighter", accounts[1]),
       "revert",
     );
   });
