@@ -1,19 +1,14 @@
 "use strict";
 
 const abi = require("ethereumjs-abi");
-const { step } = require("mocha-steps");
 const { assertThrowsAsync } = require("./utils.js");
 
 const SimpleOperations = artifacts.require("./SimpleOperations.sol");
 const OperationsProxy = artifacts.require("./OperationsProxy.sol");
 
 contract("OperationsProxy", accounts => {
-  const deploy_operations_proxy = async (deploy_operations = false) => {
-    const operations =
-          deploy_operations?
-          await SimpleOperations.new():
-          await SimpleOperations.deployed();
-
+  const deploy_operations_proxy = async () => {
+    const operations = await SimpleOperations.new();
     const operations_proxy =
           await OperationsProxy.new(
             accounts[0], // owner
@@ -26,18 +21,14 @@ contract("OperationsProxy", accounts => {
             operations.address,
           );
 
+    // transfer ownership of the parity client to the proxy contract
+    await operations.setClientOwner(operations_proxy.address);
+
     return [operations, operations_proxy];
   };
 
-  let operations;
-  let operations_proxy;
-  before(async () => {
-    let [ops, ops_proxy] = await deploy_operations_proxy();
-    operations = ops;
-    operations_proxy = ops_proxy;
-  });
-
   it("should initialize the contract with the given parameters", async () => {
+    let [operations, operations_proxy] = await deploy_operations_proxy();
     assert.equal(accounts[0], await operations_proxy.owner());
     assert.equal(accounts[1], await operations_proxy.delegate(1));
     assert.equal(accounts[2], await operations_proxy.delegate(2));
@@ -48,7 +39,7 @@ contract("OperationsProxy", accounts => {
   });
 
   it("should relay calls to the `Operations` contract on fallback", async () => {
-    let [operations, operations_proxy] = await deploy_operations_proxy(true);
+    let [operations, operations_proxy] = await deploy_operations_proxy();
     const watcher = operations.ForkRatified();
 
     // set the operations proxy contract as the owner of the simple operations contract
@@ -168,5 +159,124 @@ contract("OperationsProxy", accounts => {
     assert.equal(events.length, 1);
     assert.equal(events[0].args.was, accounts[4]);
     assert.equal(events[0].args.who, accounts[9]);
+  });
+
+  it("should relay addRelease and addChecksum requests after they are confirmed", async () => {
+    let [operations, operations_proxy] = await deploy_operations_proxy();
+    let watcher = operations_proxy.NewRequestWaiting();
+
+    const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    const forkBlock = "100";
+    const track = "1";
+    const semver = "65536";
+    const critical = false;
+    const platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
+    const checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
+
+    // only the track delegate (`accounts[1]`) can add a release
+    await assertThrowsAsync(
+      () => operations_proxy.addRelease(release, forkBlock, track, semver, critical),
+      "revert",
+    );
+
+    // we successfully add a new release
+    await operations_proxy.addRelease(
+      release,
+      forkBlock,
+      track,
+      semver,
+      critical,
+      { from: accounts[1] },
+    );
+
+    // it should emit a `NewRequestWaiting` event
+    let events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.track, track);
+
+    const add_release_hash = events[0].args.hash;
+
+    // the pending release state variables should be updated
+    assert.equal(
+      await operations_proxy.pendingRelease(add_release_hash),
+      release,
+    );
+
+    assert.equal(
+      await operations_proxy.trackOfPendingRelease(release),
+      track,
+    );
+
+    // only the track delegate (`accounts[1]`) can add a checksum
+    await assertThrowsAsync(
+      () => operations_proxy.addChecksum(release, platform, checksum),
+      "revert",
+    );
+
+    // we successfully add a new checksum
+    await operations_proxy.addChecksum(release, platform, checksum, { from: accounts[1] }),
+
+    // it should emit a `NewRequestWaiting` event
+    events = await watcher.get();
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.track, track);
+
+    const add_checksum_hash = events[0].args.hash;
+
+    // only the track confirmer (`accounts[4]`) can confirm a request
+    await assertThrowsAsync(
+      () => operations_proxy.confirm(track, add_release_hash),
+      "revert",
+    );
+
+    watcher = operations_proxy.RequestConfirmed();
+    let operations_watcher = operations.ReleaseAdded();
+
+    // we successfully confirm the add release request
+    await operations_proxy.confirm(track, add_release_hash, { from: accounts[4] });
+
+    // it should emit a `RequestConfirmed` event
+    events = await watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.track, track);
+    assert.equal(events[0].args.hash, add_release_hash);
+    assert.equal(events[0].args.success, true);
+
+    // the operations contract should emit a `ReleaseAdded` event
+    events = await operations_watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity");
+    assert.equal(events[0].args.forkBlock, forkBlock);
+    assert.equal(events[0].args.release, release);
+    assert.equal(events[0].args.track, track);
+    assert.equal(events[0].args.semver, semver);
+    assert.equal(events[0].args.critical, critical);
+
+    // the pending release state variables should be cleared
+    assert.equal(await operations_proxy.pendingRelease(add_release_hash), 0);
+    assert.equal(await operations_proxy.trackOfPendingRelease(release), 0);
+
+    watcher = operations_proxy.RequestConfirmed();
+    operations_watcher = operations.ChecksumAdded();
+
+    // we successfully confirm the add checksum request
+    await operations_proxy.confirm(track, add_checksum_hash, { from: accounts[4] });
+
+    // it should emit a `RequestConfirmed` event
+    events = await watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.track, track);
+    assert.equal(events[0].args.hash, add_checksum_hash);
+    assert.equal(events[0].args.success, true);
+
+    // the operations contract should emit a `ChecksumAdded` event
+    events = await operations_watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity");
+    assert.equal(events[0].args.release, release);
+    assert.equal(events[0].args.platform, platform);
+    assert.equal(events[0].args.checksum, checksum);
   });
 });
