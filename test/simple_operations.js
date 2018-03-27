@@ -111,7 +111,7 @@ contract("SimpleOperations", accounts => {
       [forkBlock, track, semver, critical],
     );
 
-    // it should be set has the latest release for its track
+    // it should be set as the latest release for its track
     new_release = await operations.latestInTrack("parity", track);
     assert.equal(new_release, release);
     assert(await operations.isLatest("parity", release));
@@ -155,7 +155,7 @@ contract("SimpleOperations", accounts => {
     let new_checksum = await operations.checksum("parity", release, platform);
     assert.equal(new_checksum, 0);
 
-    // we successfully add a checksum for a release for
+    // we successfully add a checksum for a release
     await operations.addChecksum(release, platform, checksum);
 
     // the new checksum should be returned by the getter
@@ -175,6 +175,51 @@ contract("SimpleOperations", accounts => {
     assert.equal(events[0].args.release, release);
     assert.equal(events[0].args.platform, platform);
     assert.equal(events[0].args.checksum, checksum);
+  });
+
+  step("should allow the owner of a client to add multiple checksums for the release", async () => {
+    const operations = await SimpleOperations.deployed();
+    const watcher = operations.ChecksumAdded();
+
+    const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    const platforms = [
+      "0x1000000000000000000000000000000000000000000000000000000000000000",
+      "0x2000000000000000000000000000000000000000000000000000000000000000",
+      "0x3000000000000000000000000000000000000000000000000000000000000000",
+    ];
+    const checksums = [
+      "0x1111110000000000000000000000000000000000000000000000000000000000",
+      "0x2222220000000000000000000000000000000000000000000000000000000000",
+      "0x3333330000000000000000000000000000000000000000000000000000000000",
+    ];
+
+    const events = [];
+
+    // we successfully add multiple checksums for a release for different platforms
+    for (let i = 0; i < platforms.length; i++) {
+      await operations.addChecksum(release, platforms[i], checksums[i]);
+      events.push(...await watcher.get());
+    }
+
+    for (let i = 0; i < platforms.length; i++) {
+      // the new checksum should be returned by the getter
+      assert.equal(await operations.checksum("parity", release, platforms[i]), checksums[i]);
+
+      // the checksum should map to the release and platform
+      const [new_release, new_platform] = await operations.build("parity", checksums[i]);
+      assert.equal(new_release, release);
+      assert.equal(new_platform, platforms[i]);
+    }
+
+    // it should have emitted a `ChecksumAdded` event for each checksum added
+    assert.equal(events.length, platforms.length);
+
+    for (let i = 0; i < platforms.length; i++) {
+      assert.equal(web3.toUtf8(events[i].args.client), "parity");
+      assert.equal(events[i].args.release, release);
+      assert.equal(events[i].args.platform, platforms[i]);
+      assert.equal(events[i].args.checksum, checksums[i]);
+    }
   });
 
   step("should allow the owner of the contract to add a client", async () => {
