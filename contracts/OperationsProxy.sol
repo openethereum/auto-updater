@@ -114,7 +114,6 @@ contract OperationsProxy {
 
 	function confirm(uint8 _track, bytes32 _hash)
 		public
-		payable
 		only_confirmer_of_track(_track)
 	{
 		// solium-disable-next-line security/no-call-value
@@ -136,10 +135,6 @@ contract OperationsProxy {
 		only_confirmer_of_track(trackOfPendingRelease[_release])
 	{
 		delete trackOfPendingRelease[_release];
-	}
-
-	function kill() public only_owner {
-		selfdestruct(msg.sender);
 	}
 
 	function addRequest(uint8 _track)
