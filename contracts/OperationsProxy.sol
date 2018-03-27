@@ -63,7 +63,7 @@ contract OperationsProxy {
 
 	function()
 		public
-		only_owner
+		onlyOwner
 	{
 		// solium-disable-next-line security/no-low-level-calls
 		require(address(operations).call(msg.data));
@@ -71,7 +71,7 @@ contract OperationsProxy {
 
 	function setOwner(address _owner)
 		public
-		only_owner
+		onlyOwner
 	{
 		OwnerChanged(owner, _owner);
 		owner = _owner;
@@ -79,7 +79,7 @@ contract OperationsProxy {
 
 	function setDelegate(address _delegate, uint8 _track)
 		public
-		only_owner
+		onlyOwner
 	{
 		DelegateChanged(delegate[_track], _delegate, _track);
 		delegate[_track] = _delegate;
@@ -87,7 +87,7 @@ contract OperationsProxy {
 
 	function setConfirmer(address _confirmer, uint8 _track)
 		public
-		only_owner
+		onlyOwner
 	{
 		ConfirmerChanged(confirmer[_track], _confirmer, _track);
 		confirmer[_track] = _confirmer;
@@ -119,7 +119,7 @@ contract OperationsProxy {
 
 	function confirm(uint8 _track, bytes32 _hash)
 		public
-		only_confirmer_of_track(_track)
+		onlyConfirmerOf(_track)
 	{
 		// solium-disable-next-line security/no-low-level-calls
 		var success = address(operations).call(waiting[_track][_hash]);
@@ -131,7 +131,7 @@ contract OperationsProxy {
 
 	function reject(uint8 _track, bytes32 _hash)
 		public
-		only_confirmer_of_track(_track)
+		onlyConfirmerOf(_track)
 	{
 		delete waiting[_track][_hash];
 		RequestRejected(_track, _hash);
@@ -155,7 +155,7 @@ contract OperationsProxy {
 
 	function addRequest(uint8 _track)
 		internal
-		only_delegate_of_track(_track)
+		onlyDelegateOf(_track)
 		returns (bytes32)
 	{
 		require(confirmer[_track] != 0);
@@ -167,17 +167,17 @@ contract OperationsProxy {
 		return hash;
 	}
 
-	modifier only_owner {
+	modifier onlyOwner {
 		require(msg.sender == owner);
 		_;
 	}
 
-	modifier only_delegate_of_track(uint8 track) {
+	modifier onlyDelegateOf(uint8 track) {
 		require(delegate[track] == msg.sender);
 		_;
 	}
 
-	modifier only_confirmer_of_track(uint8 track) {
+	modifier onlyConfirmerOf(uint8 track) {
 		require(confirmer[track] == msg.sender);
 		_;
 	}

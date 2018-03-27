@@ -57,8 +57,8 @@ contract SimpleOperations is Operations {
 
 	function setClientOwner(address _newOwner)
 		public
-		only_client_owner
-		not_client_owner(_newOwner)
+		onlyClientOwner
+		notClientOwner(_newOwner)
 	{
 		var newClient = clientOwner[msg.sender];
 		delete clientOwner[msg.sender];
@@ -79,7 +79,7 @@ contract SimpleOperations is Operations {
 		bool _critical
 	)
 		public
-		only_client_owner
+		onlyClientOwner
 	{
 		var newClient = clientOwner[msg.sender];
 		client[newClient].release[_release] = Release(
@@ -105,7 +105,7 @@ contract SimpleOperations is Operations {
 	/// emitted multiple times for the same checksum.
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
 		public
-		only_client_owner
+		onlyClientOwner
 	{
 		var newClient = clientOwner[msg.sender];
 		require(releaseExists(newClient, _release));
@@ -123,8 +123,8 @@ contract SimpleOperations is Operations {
 
 	function setClient(bytes32 _client, address _owner)
 		public
-		only_owner
-		not_client_owner(_owner)
+		onlyOwner
+		notClientOwner(_owner)
 	{
 		var owner = client[_client].owner;
 		delete clientOwner[owner];
@@ -135,7 +135,7 @@ contract SimpleOperations is Operations {
 
 	function removeClient(bytes32 _client)
 		public
-		only_owner
+		onlyOwner
 	{
 		var owner = client[_client].owner;
 		delete clientOwner[owner];
@@ -144,7 +144,7 @@ contract SimpleOperations is Operations {
 
 	function setLatestFork(uint32 _forkNumber)
 		public
-		only_owner
+		onlyOwner
 	{
 		ForkRatified(_forkNumber);
 		latestFork = _forkNumber;
@@ -152,7 +152,7 @@ contract SimpleOperations is Operations {
 
 	function setOwner(address _newOwner)
 		public
-		only_owner
+		onlyOwner
 	{
 		OwnerChanged(grandOwner, _newOwner);
 		grandOwner = _newOwner;
@@ -247,18 +247,18 @@ contract SimpleOperations is Operations {
 
 	// Modifiers
 
-	modifier only_owner {
+	modifier onlyOwner {
 		require(grandOwner == msg.sender);
 		_;
 	}
 
-	modifier only_client_owner {
+	modifier onlyClientOwner {
 		var newClient = clientOwner[msg.sender];
 		require(newClient != 0);
 		_;
 	}
 
-	modifier not_client_owner(address owner) {
+	modifier notClientOwner(address owner) {
 		require(clientOwner[owner] == 0);
 		_;
 	}
