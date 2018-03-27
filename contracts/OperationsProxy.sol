@@ -33,7 +33,7 @@ contract OperationsProxy {
 	event DelegateChanged(address indexed was, address indexed who, uint8 indexed track);
 	event ConfirmerChanged(address indexed was, address indexed who, uint8 indexed track);
 	event NewRequestWaiting(uint8 indexed track, bytes32 hash);
-	event RequestConfirmed(uint8 indexed track, bytes32 hash);
+	event RequestConfirmed(uint8 indexed track, bytes32 hash, bool success);
 	event RequestRejected(uint8 indexed track, bytes32 hash);
 
 	function OperationsProxy(
@@ -62,8 +62,8 @@ contract OperationsProxy {
 		public
 		only_owner
 	{
-		// solium-disable-next-line security/no-call-value
-		require(address(operations).call.value(msg.value)(msg.data));
+		// solium-disable-next-line security/no-low-level-calls
+		require(address(operations).call(msg.data));
 	}
 
 	function setOwner(address _owner)
@@ -116,10 +116,10 @@ contract OperationsProxy {
 		public
 		only_confirmer_of_track(_track)
 	{
-		// solium-disable-next-line security/no-call-value
-		require(address(operations).call.value(msg.value)(waiting[_track][_hash]));
+		// solium-disable-next-line security/no-low-level-calls
+		var success = address(operations).call(waiting[_track][_hash]);
 		delete waiting[_track][_hash];
-		RequestConfirmed(_track, _hash);
+		RequestConfirmed(_track, _hash, success);
 	}
 
 	function reject(uint8 _track, bytes32 _hash)
