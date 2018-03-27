@@ -108,6 +108,7 @@ contract SimpleOperations is Operations {
 		only_client_owner
 	{
 		var newClient = clientOwner[msg.sender];
+		require(releaseExists(newClient, _release));
 		client[newClient].build[_checksum] = Build(_release, _platform);
 		client[newClient].release[_release].checksum[_platform] = _checksum;
 		ChecksumAdded(
@@ -232,6 +233,16 @@ contract SimpleOperations is Operations {
 		returns (bytes32)
 	{
 		return clientOwner[_owner];
+	}
+
+	// Internals
+
+	function releaseExists(bytes32 _client, bytes32 _release)
+		internal
+		returns (bool)
+	{
+		var releas = client[_client].release[_release];
+		return releas.forkBlock != 0 && releas.track != 0 && releas.semver != 0;
 	}
 
 	// Modifiers

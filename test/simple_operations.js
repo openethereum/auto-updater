@@ -12,7 +12,7 @@ contract("SimpleOperations", accounts => {
       assert(err.message.includes(msg), "Expected error to include: " + msg);
       return;
     }
-    assert.fail('Expected fn to throw');
+    assert.fail("Expected fn to throw");
   };
 
   it("should initialize the contract with the parity client", async () => {
@@ -200,6 +200,30 @@ contract("SimpleOperations", accounts => {
       assert.equal(events[i].args.platform, platforms[i]);
       assert.equal(events[i].args.checksum, checksums[i]);
     }
+  });
+
+  it("should prevent the owner of a client from adding checksums for a non-existent release", async () => {
+    const operations = await SimpleOperations.new();
+    const watcher = operations.ChecksumAdded();
+
+    const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    const platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
+    const checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
+
+    // we cannot add a checksum for a release that doesn't exist
+    await assertThrowsAsync(
+      () => operations.addChecksum(release, platform, checksum),
+      "revert",
+    );
+
+    await operations.addRelease(release, 1, 1, 1, false);
+
+    // after adding the release we successfully add a checksum
+    await operations.addChecksum(release, platform, checksum);
+
+    // the new checksum should be returned by the getter
+    const new_checksum = await operations.checksum("parity", release, platform);
+    assert.equal(new_checksum, checksum);
   });
 
   step("should allow the owner of the contract to add/set a client", async () => {
