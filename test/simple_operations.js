@@ -26,24 +26,6 @@ contract("SimpleOperations", accounts => {
     assert.equal(web3.toUtf8(client), "parity");
   });
 
-  it("should emit a `Received` event on fallback", async () => {
-    const operations = await SimpleOperations.deployed();
-    const watcher = operations.Received();
-
-    await operations.sendTransaction({
-      from: accounts[1],
-      value: 3,
-      data: web3.fromUtf8("hello"),
-    });
-
-    const events = await watcher.get();
-
-    assert.equal(events.length, 1);
-    assert.equal(events[0].args.from, accounts[1]);
-    assert.equal(events[0].args.value.valueOf(), 3);
-    assert.equal(web3.toUtf8(events[0].args.data), "hello");
-  });
-
   it("should allow the owner of a client to transfer ownership", async () => {
     const operations = await SimpleOperations.new();
     const watcher = operations.ClientOwnerChanged();

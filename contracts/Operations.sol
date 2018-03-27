@@ -22,7 +22,6 @@ contract Operations {
 	uint8 constant BETA = 2;
 	uint8 constant NIGHTLY = 3;
 
-	event Received(address indexed from, uint value, bytes data);
 	event ReleaseAdded(
 		bytes32 indexed client,
 		uint32 indexed forkBlock,
