@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "./Operations.sol";
 
@@ -89,7 +89,7 @@ contract SimpleOperations is Operations {
 			_critical
 		);
 		client[newClient].current[_track] = _release;
-		ReleaseAdded(
+		emit ReleaseAdded(
 			newClient,
 			_forkBlock,
 			_release,
@@ -111,7 +111,7 @@ contract SimpleOperations is Operations {
 		require(releaseExists(newClient, _release));
 		client[newClient].build[_checksum] = Build(_release, _platform);
 		client[newClient].release[_release].checksum[_platform] = _checksum;
-		ChecksumAdded(
+		emit ChecksumAdded(
 			newClient,
 			_release,
 			_platform,
@@ -146,7 +146,7 @@ contract SimpleOperations is Operations {
 		public
 		onlyOwner
 	{
-		ForkRatified(_forkNumber);
+		emit ForkRatified(_forkNumber);
 		latestFork = _forkNumber;
 	}
 
@@ -154,7 +154,7 @@ contract SimpleOperations is Operations {
 		public
 		onlyOwner
 	{
-		OwnerChanged(grandOwner, _newOwner);
+		emit OwnerChanged(grandOwner, _newOwner);
 		grandOwner = _newOwner;
 	}
 
