@@ -69,6 +69,15 @@ contract("OperationsProxy", accounts => {
 
     assert.equal(events.length, 1);
     assert.equal(events[0].args.forkNumber.valueOf(), 100);
+
+    // it should revert on failed calls to the operations contract
+    await assertThrowsAsync(
+      () => operations_proxy.sendTransaction({
+        from: accounts[0],
+        data: "hello",
+      }),
+      "revert",
+    );
   });
 
   it("should allow the owner of the contract to transfer ownership of the contract", async () => {
@@ -394,5 +403,31 @@ contract("OperationsProxy", accounts => {
     assert.equal(events[0].args.release, release);
     assert.equal(events[0].args.platform, platform);
     assert.equal(events[0].args.checksum, checksum);
+  });
+
+  it("should validate that a track confirmer exists before adding a request", async () => {
+    let [operations, operations_proxy] = await deploy_operations_proxy();
+
+    const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    const forkBlock = "100";
+    const track = "1";
+    const semver = "65536";
+    const critical = false;
+
+    // remove confirmer for the track
+    await operations_proxy.setConfirmer(0, track);
+
+    // the request should fail since there's no confirmer defined for the track
+    await assertThrowsAsync(
+      () => operations_proxy.addRelease(
+        release,
+        forkBlock,
+        track,
+        semver,
+        critical,
+        { from: accounts[1] },
+      ),
+      "revert",
+    );
   });
 });
