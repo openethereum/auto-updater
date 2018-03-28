@@ -102,7 +102,7 @@ contract OperationsProxy {
 	)
 		public
 	{
-		var hash = addRequest(_track);
+		bytes32 hash = addRequest(_track);
 
 		pendingRelease[hash] = _release;
 		trackOfPendingRelease[_release] = _track;
@@ -111,7 +111,7 @@ contract OperationsProxy {
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
 		public
 	{
-		var track = trackOfPendingRelease[_release];
+		uint8 track = trackOfPendingRelease[_release];
 		if (track == 0)
 			track = operations.track(operations.clientOwner(this), _release);
 		addRequest(track);
@@ -122,7 +122,7 @@ contract OperationsProxy {
 		onlyConfirmerOf(_track)
 	{
 		// solium-disable-next-line security/no-low-level-calls
-		var success = address(operations).call(waiting[_track][_hash]);
+		bool success = address(operations).call(waiting[_track][_hash]);
 		delete waiting[_track][_hash];
 		RequestConfirmed(_track, _hash, success);
 
@@ -142,12 +142,12 @@ contract OperationsProxy {
 	function cleanupRelease(uint8 _track, bytes32 _hash)
 		internal
 	{
-		var release = pendingRelease[_hash];
+		bytes32 release = pendingRelease[_hash];
 		if (release != 0) {
 			delete pendingRelease[_hash];
 		}
 
-		var track = trackOfPendingRelease[release];
+		uint8 track = trackOfPendingRelease[release];
 		if (track == _track) {
 			delete trackOfPendingRelease[release];
 		}
@@ -160,7 +160,7 @@ contract OperationsProxy {
 	{
 		require(confirmer[_track] != 0);
 
-		var hash = keccak256(msg.data);
+		bytes32 hash = keccak256(msg.data);
 		waiting[_track][hash] = msg.data;
 		NewRequestWaiting(_track, hash);
 

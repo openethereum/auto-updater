@@ -60,7 +60,7 @@ contract SimpleOperations is Operations {
 		onlyClientOwner
 		notClientOwner(_newOwner)
 	{
-		var newClient = clientOwner[msg.sender];
+		bytes32 newClient = clientOwner[msg.sender];
 		delete clientOwner[msg.sender];
 
 		clientOwner[_newOwner] = newClient;
@@ -81,7 +81,7 @@ contract SimpleOperations is Operations {
 		public
 		onlyClientOwner
 	{
-		var newClient = clientOwner[msg.sender];
+		bytes32 newClient = clientOwner[msg.sender];
 		client[newClient].release[_release] = Release(
 			_forkBlock,
 			_track,
@@ -107,7 +107,7 @@ contract SimpleOperations is Operations {
 		public
 		onlyClientOwner
 	{
-		var newClient = clientOwner[msg.sender];
+		bytes32 newClient = clientOwner[msg.sender];
 		require(releaseExists(newClient, _release));
 		client[newClient].build[_checksum] = Build(_release, _platform);
 		client[newClient].release[_release].checksum[_platform] = _checksum;
@@ -126,7 +126,7 @@ contract SimpleOperations is Operations {
 		onlyOwner
 		notClientOwner(_owner)
 	{
-		var owner = client[_client].owner;
+		address owner = client[_client].owner;
 		delete clientOwner[owner];
 
 		clientOwner[_owner] = _client;
@@ -137,7 +137,7 @@ contract SimpleOperations is Operations {
 		public
 		onlyOwner
 	{
-		var owner = client[_client].owner;
+		address owner = client[_client].owner;
 		delete clientOwner[owner];
 		delete client[_client];
 	}
@@ -189,7 +189,7 @@ contract SimpleOperations is Operations {
 		view
 		returns (bytes32 o_release, bytes32 o_platform)
 	{
-		var b = client[_client].build[_checksum];
+		Build storage b = client[_client].build[_checksum];
 		o_release = b.release;
 		o_platform = b.platform;
 	}
@@ -204,11 +204,11 @@ contract SimpleOperations is Operations {
 			bool o_critical
 		)
 	{
-		var b = client[_client].release[_release];
-		o_forkBlock = b.forkBlock;
-		o_track = b.track;
-		o_semver = b.semver;
-		o_critical = b.critical;
+		Release storage r = client[_client].release[_release];
+		o_forkBlock = r.forkBlock;
+		o_track = r.track;
+		o_semver = r.semver;
+		o_critical = r.critical;
 	}
 
 	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform)
@@ -242,8 +242,8 @@ contract SimpleOperations is Operations {
 		view
 		returns (bool)
 	{
-		var releas = client[_client].release[_release];
-		return releas.forkBlock != 0 && releas.track != 0 && releas.semver != 0;
+		Release storage r = client[_client].release[_release];
+		return r.forkBlock != 0 && r.track != 0 && r.semver != 0;
 	}
 
 	// Modifiers
@@ -254,7 +254,7 @@ contract SimpleOperations is Operations {
 	}
 
 	modifier onlyClientOwner {
-		var newClient = clientOwner[msg.sender];
+		bytes32 newClient = clientOwner[msg.sender];
 		require(newClient != 0);
 		_;
 	}
