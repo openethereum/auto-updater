@@ -18,9 +18,10 @@ pragma solidity ^0.4.19;
 
 
 contract Operations {
-	uint8 constant STABLE = 1;
-	uint8 constant BETA = 2;
-	uint8 constant NIGHTLY = 3;
+	/// Tracks
+	// STABLE = 1;
+	// BETA = 2;
+	// NIGHTLY = 3;
 
 	event ReleaseAdded(
 		bytes32 indexed client,
