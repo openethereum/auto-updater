@@ -121,12 +121,13 @@ contract OperationsProxy {
 		public
 		onlyConfirmerOf(_track)
 	{
-		// solium-disable-next-line security/no-low-level-calls
-		bool success = address(operations).call(waiting[_track][_hash]);
+		bytes memory request = waiting[_track][_hash];
 		delete waiting[_track][_hash];
-		RequestConfirmed(_track, _hash, success);
-
 		cleanupRelease(_track, _hash);
+
+		// solium-disable-next-line security/no-low-level-calls
+		bool success = address(operations).call(request);
+		RequestConfirmed(_track, _hash, success);
 	}
 
 	function reject(uint8 _track, bytes32 _hash)
