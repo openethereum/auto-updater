@@ -112,8 +112,9 @@ contract OperationsProxy {
 		public
 	{
 		uint8 track = trackOfPendingRelease[_release];
-		if (track == 0)
+		if (track == 0) {
 			track = operations.track(operations.clientOwner(this), _release);
+		}
 		addRequest(track);
 	}
 
