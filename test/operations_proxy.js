@@ -336,4 +336,63 @@ contract("OperationsProxy", accounts => {
     // the waiting request should be cleared
     assert.equal(await operations_proxy.waiting(track, add_release_hash), "0x");
   });
+
+  it("should validate addChecksum requests for already existing releases", async () => {
+    let [operations, operations_proxy] = await deploy_operations_proxy();
+    let watcher = operations_proxy.NewRequestWaiting();
+
+    const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    const forkBlock = "100";
+    const track = "1";
+    const semver = "65536";
+    const critical = false;
+    const platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
+    const checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
+
+    // add a new release
+    await operations_proxy.addRelease(
+      release,
+      forkBlock,
+      track,
+      semver,
+      critical,
+      { from: accounts[1] },
+    );
+    let events = await watcher.get();
+    const add_release_hash = events[0].args.hash;
+
+    // confirm the add release request
+    await operations_proxy.confirm(track, add_release_hash, { from: accounts[4] });
+
+    // pending release state variables are now cleared, so the add checksum
+    // request will have to fetch track data from the operations contract
+
+    // add a new checksum
+    await operations_proxy.addChecksum(release, platform, checksum, { from: accounts[1] }),
+
+    // it should emit a `NewRequestWaiting` event
+    events = await watcher.get();
+    const add_checksum_hash = events[0].args.hash;
+
+    watcher = operations_proxy.RequestConfirmed();
+    let operations_watcher = operations.ChecksumAdded();
+
+    // confirm the add checksum request
+    await operations_proxy.confirm(track, add_checksum_hash, { from: accounts[4] });
+
+    // it should emit a `RequestConfirmed` event
+    events = await watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.track, track);
+    assert.equal(events[0].args.hash, add_checksum_hash);
+    assert.equal(events[0].args.success, true);
+
+    // the operations contract should emit a `ChecksumAdded` event
+    events = await operations_watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity");
+    assert.equal(events[0].args.release, release);
+    assert.equal(events[0].args.platform, platform);
+    assert.equal(events[0].args.checksum, checksum);
+  });
 });
