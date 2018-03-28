@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "./Operations.sol";
 
@@ -73,7 +73,7 @@ contract OperationsProxy {
 		public
 		onlyOwner
 	{
-		OwnerChanged(owner, _owner);
+		emit OwnerChanged(owner, _owner);
 		owner = _owner;
 	}
 
@@ -81,7 +81,7 @@ contract OperationsProxy {
 		public
 		onlyOwner
 	{
-		DelegateChanged(delegate[_track], _delegate, _track);
+		emit DelegateChanged(delegate[_track], _delegate, _track);
 		delegate[_track] = _delegate;
 	}
 
@@ -89,7 +89,7 @@ contract OperationsProxy {
 		public
 		onlyOwner
 	{
-		ConfirmerChanged(confirmer[_track], _confirmer, _track);
+		emit ConfirmerChanged(confirmer[_track], _confirmer, _track);
 		confirmer[_track] = _confirmer;
 	}
 
@@ -128,7 +128,7 @@ contract OperationsProxy {
 
 		// solium-disable-next-line security/no-low-level-calls
 		bool success = address(operations).call(request);
-		RequestConfirmed(_track, _hash, success);
+		emit RequestConfirmed(_track, _hash, success);
 	}
 
 	function reject(uint8 _track, bytes32 _hash)
@@ -136,7 +136,7 @@ contract OperationsProxy {
 		onlyConfirmerOf(_track)
 	{
 		delete waiting[_track][_hash];
-		RequestRejected(_track, _hash);
+		emit RequestRejected(_track, _hash);
 
 		cleanupRelease(_track, _hash);
 	}
@@ -164,7 +164,7 @@ contract OperationsProxy {
 
 		bytes32 hash = keccak256(msg.data);
 		waiting[_track][hash] = msg.data;
-		NewRequestWaiting(_track, hash);
+		emit NewRequestWaiting(_track, hash);
 
 		return hash;
 	}
