@@ -366,4 +366,76 @@ contract("SimpleOperations", accounts => {
       "revert",
     );
   });
+
+  it("should prevent getting data from removed clients", async () => {
+    const operations = await SimpleOperations.new();
+
+    const client = "parity-light";
+    const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
+    const forkBlock = "100";
+    const track = "1";
+    const semver = "65536";
+    const critical = false;
+    const platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
+    const checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
+
+    // we set the ownership of the parity-light client to `accounts[1]`
+    await operations.setClient(client, accounts[1]);
+
+    // we add a release and checksum
+    await operations.addRelease(
+      release,
+      forkBlock,
+      track,
+      semver,
+      critical,
+      { from: accounts[1] },
+    );
+
+    await operations.addChecksum(release, platform, checksum, { from: accounts[1] }),
+
+    // we successfully remove the client
+    await operations.removeClient(client);
+
+    // `accounts[1]` should not be set as a client owner
+    let owner = await operations.client(client);
+    assert.equal(owner, 0);
+    assert.equal(await operations.clientOwner(accounts[1]), 0);
+
+    // the getters should not return existing information from the removed client
+    assert.equal(await operations.isLatest(client, release), false);
+    assert.equal(await operations.track(client, release), 0);
+    assert.equal(await operations.latestInTrack(client, track), 0);
+    assert.deepEqual(
+      (await operations.build(client, checksum)).map(web3.toDecimal),
+      [0, 0],
+    );
+    assert.deepEqual(
+      (await operations.release(client, release)).map(web3.toDecimal),
+      [0, 0, 0, 0],
+    );
+    assert.equal(await operations.checksum(client, release, platform), 0);
+
+    // we re-add the client
+    await operations.setClient("parity-light", accounts[1]);
+
+    // `accounts[1]` is re-added as the client owner
+    owner = await operations.client(client);
+    assert.equal(owner, accounts[1]);
+    assert.equal(web3.toUtf8(await operations.clientOwner(accounts[1])), client);
+
+    // all of the previous release and build data should is available again
+    assert.equal(await operations.isLatest(client, release), true);
+    assert.equal(await operations.track(client, release), track);
+    assert.equal(await operations.latestInTrack(client, track), release);
+    assert.deepEqual(
+      await operations.build(client, checksum),
+      [release, platform],
+    );
+    assert.deepEqual(
+      (await operations.release(client, release)).map(v => v.valueOf()),
+      [forkBlock, track, semver, critical],
+    );
+    assert.equal(await operations.checksum(client, release, platform), checksum);
+  });
 });
