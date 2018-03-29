@@ -133,13 +133,18 @@ contract SimpleOperations is Operations {
 		client[_client].owner = _owner;
 	}
 
+	// Removes the client. This only removes the ownership of the client from the current client
+	// owner, the existing release and build data is kept. The getters are guarded against this
+	// behavior, and check that the client is currently not removed (i.e. no owner) before accessing
+	// the data. If a removed client is then re-added (with `setClient`) all of the previous release
+	// and build information is available and returned by the getters.
 	function removeClient(bytes32 _client)
 		public
 		onlyOwner
 	{
 		address owner = client[_client].owner;
 		delete clientOwner[owner];
-		delete client[_client];
+		delete client[_client].owner;
 	}
 
 	function setLatestFork(uint32 _forkNumber)
@@ -165,7 +170,7 @@ contract SimpleOperations is Operations {
 		view
 		returns (bool)
 	{
-		return latestInTrack(_client, track(_client, _release)) == _release;
+		return clientExists(_client) && latestInTrack(_client, track(_client, _release)) == _release;
 	}
 
 	function track(bytes32 _client, bytes32 _release)
@@ -173,7 +178,11 @@ contract SimpleOperations is Operations {
 		view
 		returns (uint8)
 	{
-		return client[_client].release[_release].track;
+		if (clientExists(_client)) {
+			return client[_client].release[_release].track;
+		} else {
+			return 0;
+		}
 	}
 
 	function latestInTrack(bytes32 _client, uint8 _track)
@@ -181,7 +190,11 @@ contract SimpleOperations is Operations {
 		view
 		returns (bytes32)
 	{
-		return client[_client].current[_track];
+		if (clientExists(_client)) {
+			return client[_client].current[_track];
+		} else {
+			return 0;
+		}
 	}
 
 	function build(bytes32 _client, bytes32 _checksum)
@@ -189,9 +202,14 @@ contract SimpleOperations is Operations {
 		view
 		returns (bytes32 o_release, bytes32 o_platform)
 	{
-		Build storage b = client[_client].build[_checksum];
-		o_release = b.release;
-		o_platform = b.platform;
+		if (clientExists(_client)) {
+			Build storage b = client[_client].build[_checksum];
+			o_release = b.release;
+			o_platform = b.platform;
+		} else {
+			o_release = bytes32(0);
+			o_platform = bytes32(0);
+		}
 	}
 
 	function release(bytes32 _client, bytes32 _release)
@@ -204,11 +222,18 @@ contract SimpleOperations is Operations {
 			bool o_critical
 		)
 	{
-		Release storage r = client[_client].release[_release];
-		o_forkBlock = r.forkBlock;
-		o_track = r.track;
-		o_semver = r.semver;
-		o_critical = r.critical;
+		if (clientExists(_client)) {
+			Release storage r = client[_client].release[_release];
+			o_forkBlock = r.forkBlock;
+			o_track = r.track;
+			o_semver = r.semver;
+			o_critical = r.critical;
+		} else {
+			o_forkBlock = 0;
+			o_track = 0;
+			o_semver = 0;
+			o_critical = false;
+		}
 	}
 
 	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform)
@@ -216,7 +241,11 @@ contract SimpleOperations is Operations {
 		view
 		returns (bytes32)
 	{
-		return client[_client].release[_release].checksum[_platform];
+		if (clientExists(_client)) {
+			return client[_client].release[_release].checksum[_platform];
+		} else {
+			return bytes32(0);
+		}
 	}
 
 	function latestFork()
@@ -236,6 +265,14 @@ contract SimpleOperations is Operations {
 	}
 
 	// Internals
+
+	function clientExists(bytes32 _client)
+		internal
+		view
+		returns (bool)
+	{
+		return client[_client].owner != 0;
+	}
 
 	function releaseExists(bytes32 _client, bytes32 _release)
 		internal
