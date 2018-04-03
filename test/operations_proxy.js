@@ -405,7 +405,7 @@ contract("OperationsProxy", accounts => {
     assert.equal(events[0].args.checksum, checksum);
   });
 
-  it("should validate that a track confirmer exists before adding a request", async () => {
+  it("should relay requests right away if no track confirmer is defined", async () => {
     let [operations, operations_proxy] = await deploy_operations_proxy();
 
     const release = "0x1234560000000000000000000000000000000000000000000000000000000000";
@@ -413,21 +413,61 @@ contract("OperationsProxy", accounts => {
     const track = "1";
     const semver = "65536";
     const critical = false;
+    const platform = "0x1337000000000000000000000000000000000000000000000000000000000000";
+    const checksum = "0x1111110000000000000000000000000000000000000000000000000000000000";
 
     // remove confirmer for the track
     await operations_proxy.setConfirmer(0, track);
 
-    // the request should fail since there's no confirmer defined for the track
-    await assertThrowsAsync(
-      () => operations_proxy.addRelease(
-        release,
-        forkBlock,
-        track,
-        semver,
-        critical,
-        { from: accounts[1] },
-      ),
-      "revert",
+    let watcher = operations_proxy.RequestConfirmed();
+    let operations_watcher = operations.ReleaseAdded();
+
+    // we successfully add a new release
+    await operations_proxy.addRelease(
+      release,
+      forkBlock,
+      track,
+      semver,
+      critical,
+      { from: accounts[1] },
     );
+
+    // since there is no confirmer for the track it should be relayed right away
+    // and it should emit a `RequestConfirmed` event
+    let events = await watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.track, track);
+    assert.equal(events[0].args.success, true);
+
+    // the operations contract should emit a `ReleaseAdded` event
+    events = await operations_watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity");
+    assert.equal(events[0].args.forkBlock, forkBlock);
+    assert.equal(events[0].args.release, release);
+    assert.equal(events[0].args.track, track);
+    assert.equal(events[0].args.semver, semver);
+    assert.equal(events[0].args.critical, critical);
+
+    watcher = operations_proxy.RequestConfirmed();
+    operations_watcher = operations.ChecksumAdded();
+
+    // we successfully add a new release
+    await operations_proxy.addChecksum(release, platform, checksum, { from: accounts[1] });
+
+    // since there is no confirmer for the track it should be relayed right away
+    // and it should emit a `RequestConfirmed` event
+    events = await watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].args.track, track);
+    assert.equal(events[0].args.success, true);
+
+    // the operations contract should emit a `ChecksumAdded` event
+    events = await operations_watcher.get();
+    assert.equal(events.length, 1);
+    assert.equal(web3.toUtf8(events[0].args.client), "parity");
+    assert.equal(events[0].args.release, release);
+    assert.equal(events[0].args.platform, platform);
+    assert.equal(events[0].args.checksum, checksum);
   });
 });
