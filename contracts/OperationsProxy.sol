@@ -102,10 +102,13 @@ contract OperationsProxy {
 	)
 		public
 	{
-		bytes32 hash = addRequest(_track);
+		bool relayed = tryRelay(_track);
+		if (!relayed) {
+			bytes32 hash = addRequest(_track);
 
-		pendingRelease[hash] = _release;
-		trackOfPendingRelease[_release] = _track;
+			pendingRelease[hash] = _release;
+			trackOfPendingRelease[_release] = _track;
+		}
 	}
 
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
@@ -115,7 +118,11 @@ contract OperationsProxy {
 		if (track == 0) {
 			track = operations.track(operations.clientOwner(this), _release);
 		}
-		addRequest(track);
+
+		bool relayed = tryRelay(track);
+		if (!relayed) {
+			addRequest(track);
+		}
 	}
 
 	function confirm(uint8 _track, bytes32 _hash)
@@ -155,13 +162,28 @@ contract OperationsProxy {
 		}
 	}
 
+	function tryRelay(uint8 _track)
+		internal
+		onlyDelegateOf(_track)
+		returns (bool)
+	{
+		if (confirmer[_track] == 0) {
+			// no confirmer for the track so can relay the transaction right away
+			bytes32 hash = keccak256(msg.data);
+			// solium-disable-next-line security/no-low-level-calls
+			bool success = address(operations).call(msg.data);
+			emit RequestConfirmed(_track, hash, success);
+			return true;
+		}
+
+		return false;
+	}
+
 	function addRequest(uint8 _track)
 		internal
 		onlyDelegateOf(_track)
 		returns (bytes32)
 	{
-		require(confirmer[_track] != 0);
-
 		bytes32 hash = keccak256(msg.data);
 		waiting[_track][hash] = msg.data;
 		emit NewRequestWaiting(_track, hash);
