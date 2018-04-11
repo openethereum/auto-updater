@@ -101,6 +101,7 @@ contract OperationsProxy {
 		bool _critical
 	)
 		public
+		onlyDelegateOf(_track)
 	{
 		bool relayed = tryRelay(_track);
 		if (!relayed) {
@@ -118,6 +119,8 @@ contract OperationsProxy {
 		if (track == 0) {
 			track = operations.track(operations.clientOwner(this), _release);
 		}
+
+		require(isDelegateOf(track));
 
 		bool relayed = tryRelay(track);
 		if (!relayed) {
@@ -164,7 +167,6 @@ contract OperationsProxy {
 
 	function tryRelay(uint8 _track)
 		internal
-		onlyDelegateOf(_track)
 		returns (bool)
 	{
 		if (confirmer[_track] == 0) {
@@ -181,7 +183,6 @@ contract OperationsProxy {
 
 	function addRequest(uint8 _track)
 		internal
-		onlyDelegateOf(_track)
 		returns (bytes32)
 	{
 		bytes32 hash = keccak256(msg.data);
@@ -191,13 +192,20 @@ contract OperationsProxy {
 		return hash;
 	}
 
+	function isDelegateOf(uint8 _track)
+		internal
+		returns (bool)
+	{
+		return delegate[_track] == msg.sender;
+	}
+
 	modifier onlyOwner {
 		require(msg.sender == owner);
 		_;
 	}
 
 	modifier onlyDelegateOf(uint8 track) {
-		require(delegate[track] == msg.sender);
+		require(isDelegateOf(track));
 		_;
 	}
 
