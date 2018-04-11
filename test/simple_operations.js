@@ -29,6 +29,12 @@ contract("SimpleOperations", accounts => {
     const owner = await operations.client("parity");
     assert.equal(owner, accounts[0]);
 
+    // we can't transfer ownership to the 0 address
+    await assertThrowsAsync(
+      () => operations.setClientOwner(0),
+      "revert",
+    );
+
     // we successfully transfer ownership of the parity client
     await operations.setClientOwner(accounts[1]);
 
@@ -232,6 +238,12 @@ contract("SimpleOperations", accounts => {
 
     let owner = await operations.client("parity-light");
     assert.equal(owner, 0);
+
+    // we can't set the owner of the client to be 0
+    await assertThrowsAsync(
+      () => operations.setClient("parity-light", 0),
+      "revert",
+    );
 
     // we successfully set a new client
     await operations.setClient("parity-light", accounts[2]);

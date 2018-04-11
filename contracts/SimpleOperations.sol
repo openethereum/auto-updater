@@ -60,6 +60,7 @@ contract SimpleOperations is Operations {
 		onlyClientOwner
 		notClientOwner(_newOwner)
 	{
+		require(_newOwner != 0);
 		bytes32 newClient = clientOwner[msg.sender];
 		delete clientOwner[msg.sender];
 
@@ -126,6 +127,7 @@ contract SimpleOperations is Operations {
 		onlyOwner
 		notClientOwner(_owner)
 	{
+		require(_owner != 0);
 		address owner = client[_client].owner;
 		delete clientOwner[owner];
 
