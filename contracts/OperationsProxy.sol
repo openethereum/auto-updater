@@ -103,10 +103,11 @@ contract OperationsProxy {
 		public
 		onlyDelegateOf(_track)
 	{
-		bool relayed = tryRelay(_track);
-		if (!relayed) {
-			bytes32 hash = addRequest(_track);
+		bool relayed;
+		bytes32 hash;
+		(relayed, hash) = relayOrAddToWaiting(_track);
 
+		if (!relayed) {
 			pendingRelease[hash] = _release;
 			trackOfPendingRelease[_release] = _track;
 		}
@@ -120,12 +121,9 @@ contract OperationsProxy {
 			track = operations.track(operations.clientOwner(this), _release);
 		}
 
-		require(isDelegateOf(track));
+		require(delegate[track] == msg.sender);
 
-		bool relayed = tryRelay(track);
-		if (!relayed) {
-			addRequest(track);
-		}
+		relayOrAddToWaiting(track);
 	}
 
 	function confirm(uint8 _track, bytes32 _hash)
@@ -151,6 +149,8 @@ contract OperationsProxy {
 		cleanupRelease(_track, _hash);
 	}
 
+	// it is expected that this function is only called by the confirmer of the given track, the
+	// function doesn't perform this validation.
 	function cleanupRelease(uint8 _track, bytes32 _hash)
 		internal
 	{
@@ -165,38 +165,29 @@ contract OperationsProxy {
 		}
 	}
 
-	function tryRelay(uint8 _track)
+	// it is expected that this function is only called by the delegate of the given track, the
+	// function doesn't perform this validation.
+	function relayOrAddToWaiting(uint8 _track)
 		internal
-		returns (bool)
+		returns (bool o_relayed, bytes32 o_hash)
 	{
+		bytes32 hash = keccak256(msg.data);
+		o_hash = hash;
+
 		if (confirmer[_track] == 0) {
 			// no confirmer for the track so can relay the transaction right away
-			bytes32 hash = keccak256(msg.data);
 			// solium-disable-next-line security/no-low-level-calls
 			bool success = address(operations).call(msg.data);
 			emit RequestConfirmed(_track, hash, success);
-			return true;
+
+			o_relayed = true;
+		} else {
+			// add the request to wait until it is either confirmed or rejected
+			waiting[_track][hash] = msg.data;
+			emit NewRequestWaiting(_track, hash);
+
+			o_relayed = false;
 		}
-
-		return false;
-	}
-
-	function addRequest(uint8 _track)
-		internal
-		returns (bytes32)
-	{
-		bytes32 hash = keccak256(msg.data);
-		waiting[_track][hash] = msg.data;
-		emit NewRequestWaiting(_track, hash);
-
-		return hash;
-	}
-
-	function isDelegateOf(uint8 _track)
-		internal
-		returns (bool)
-	{
-		return delegate[_track] == msg.sender;
 	}
 
 	modifier onlyOwner {
@@ -205,7 +196,7 @@ contract OperationsProxy {
 	}
 
 	modifier onlyDelegateOf(uint8 track) {
-		require(isDelegateOf(track));
+		require(delegate[track] == msg.sender);
 		_;
 	}
 
