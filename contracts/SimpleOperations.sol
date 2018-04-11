@@ -282,7 +282,7 @@ contract SimpleOperations is Operations {
 		returns (bool)
 	{
 		Release storage r = client[_client].release[_release];
-		return r.forkBlock != 0 && r.track != 0 && r.semver != 0;
+		return r.track != 0 && r.semver != 0;
 	}
 
 	// Modifiers
