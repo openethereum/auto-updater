@@ -79,6 +79,18 @@ contract("SimpleOperations", accounts => {
       ["0", "0", "0", false],
     );
 
+    // the release track can't be set to 0
+    await assertThrowsAsync(
+      () => operations.addRelease(release, forkBlock, 0, semver, critical),
+      "revert",
+    );
+
+    // the release semver can't be set to 0
+    await assertThrowsAsync(
+      () => operations.addRelease(release, forkBlock, track, 0, critical),
+      "revert",
+    );
+
     // we successfully add a release of the parity client
     await operations.addRelease(release, forkBlock, track, semver, critical);
 

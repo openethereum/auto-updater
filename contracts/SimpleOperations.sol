@@ -82,6 +82,8 @@ contract SimpleOperations is Operations {
 		public
 		onlyClientOwner
 	{
+		require(_track != 0 && _semver != 0);
+
 		bytes32 newClient = clientOwner[msg.sender];
 		client[newClient].release[_release] = Release(
 			_forkBlock,
@@ -282,7 +284,7 @@ contract SimpleOperations is Operations {
 		returns (bool)
 	{
 		Release storage r = client[_client].release[_release];
-		return r.track != 0 && r.semver != 0;
+		return clientExists(_client) && r.track != 0 && r.semver != 0;
 	}
 
 	// Modifiers
