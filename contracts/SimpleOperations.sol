@@ -46,7 +46,23 @@ contract SimpleOperations is Operations {
 	uint32 public latestFork = 0;
 	address public grandOwner = msg.sender;
 
-	function SimpleOperations()
+	modifier onlyOwner {
+		require(grandOwner == msg.sender);
+		_;
+	}
+
+	modifier onlyClientOwner {
+		bytes32 newClient = clientOwner[msg.sender];
+		require(newClient != 0);
+		_;
+	}
+
+	modifier notClientOwner(address owner) {
+		require(clientOwner[owner] == 0);
+		_;
+	}
+
+	constructor()
 		public
 	{
 		client["parity"] = Client(msg.sender);
@@ -285,23 +301,5 @@ contract SimpleOperations is Operations {
 	{
 		Release storage r = client[_client].release[_release];
 		return clientExists(_client) && r.track != 0 && r.semver != 0;
-	}
-
-	// Modifiers
-
-	modifier onlyOwner {
-		require(grandOwner == msg.sender);
-		_;
-	}
-
-	modifier onlyClientOwner {
-		bytes32 newClient = clientOwner[msg.sender];
-		require(newClient != 0);
-		_;
-	}
-
-	modifier notClientOwner(address owner) {
-		require(clientOwner[owner] == 0);
-		_;
 	}
 }

@@ -22,6 +22,13 @@ import "./Operations.sol";
 /// Specialise proxy wallet. Owner can send transactions unhindered. Delegates
 /// can send only particular transactions to a named Operations contract.
 contract OperationsProxy {
+	event OwnerChanged(address indexed was, address indexed who);
+	event DelegateChanged(address indexed was, address indexed who, uint8 indexed track);
+	event ConfirmerChanged(address indexed was, address indexed who, uint8 indexed track);
+	event NewRequestWaiting(uint8 indexed track, bytes32 hash);
+	event RequestConfirmed(uint8 indexed track, bytes32 hash, bool success);
+	event RequestRejected(uint8 indexed track, bytes32 hash);
+
 	address public owner;
 	mapping(uint8 => address) public delegate;
 	mapping(uint8 => address) public confirmer;
@@ -32,14 +39,22 @@ contract OperationsProxy {
 
 	Operations public operations;
 
-	event OwnerChanged(address indexed was, address indexed who);
-	event DelegateChanged(address indexed was, address indexed who, uint8 indexed track);
-	event ConfirmerChanged(address indexed was, address indexed who, uint8 indexed track);
-	event NewRequestWaiting(uint8 indexed track, bytes32 hash);
-	event RequestConfirmed(uint8 indexed track, bytes32 hash, bool success);
-	event RequestRejected(uint8 indexed track, bytes32 hash);
+	modifier onlyOwner {
+		require(msg.sender == owner);
+		_;
+	}
 
-	function OperationsProxy(
+	modifier onlyDelegateOf(uint8 track) {
+		require(delegate[track] == msg.sender);
+		_;
+	}
+
+	modifier onlyConfirmerOf(uint8 track) {
+		require(confirmer[track] == msg.sender);
+		_;
+	}
+
+	constructor(
 		address _owner,
 		address _stable,
 		address _beta,
@@ -188,20 +203,5 @@ contract OperationsProxy {
 
 			o_relayed = false;
 		}
-	}
-
-	modifier onlyOwner {
-		require(msg.sender == owner);
-		_;
-	}
-
-	modifier onlyDelegateOf(uint8 track) {
-		require(delegate[track] == msg.sender);
-		_;
-	}
-
-	modifier onlyConfirmerOf(uint8 track) {
-		require(confirmer[track] == msg.sender);
-		_;
 	}
 }

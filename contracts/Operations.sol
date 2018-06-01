@@ -52,6 +52,9 @@ contract Operations {
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
 		public;
 
+	function setClientOwner(address _newOwner)
+		public;
+
 	function isLatest(bytes32 _client, bytes32 _release)
 		public
 		view
@@ -96,7 +99,4 @@ contract Operations {
 		public
 		view
 		returns (bytes32);
-
-	function setClientOwner(address _newOwner)
-		public;
 }
