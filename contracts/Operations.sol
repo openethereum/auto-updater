@@ -14,10 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.22;
 
 
-contract Operations {
+interface Operations {
 	/// Tracks
 	// STABLE = 1;
 	// BETA = 2;
@@ -47,33 +47,36 @@ contract Operations {
 		uint24 _semver,
 		bool _critical
 	)
-		public;
+		external;
 
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
-		public;
+		external;
+
+	function setClientOwner(address _newOwner)
+		external;
 
 	function isLatest(bytes32 _client, bytes32 _release)
-		public
+		external
 		view
 		returns (bool);
 
 	function track(bytes32 _client, bytes32 _release)
-		public
+		external
 		view
 		returns (uint8);
 
 	function latestInTrack(bytes32 _client, uint8 _track)
-		public
+		external
 		view
 		returns (bytes32);
 
 	function build(bytes32 _client, bytes32 _checksum)
-		public
+		external
 		view
 		returns (bytes32 o_release, bytes32 o_platform);
 
 	function release(bytes32 _client, bytes32 _release)
-		public
+		external
 		view
 		returns (
 			uint32 o_forkBlock,
@@ -83,20 +86,17 @@ contract Operations {
 		);
 
 	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform)
-		public
+		external
 		view
 		returns (bytes32);
 
 	function latestFork()
-		public
+		external
 		view
 		returns (uint32);
 
 	function clientOwner(address _owner)
-		public
+		external
 		view
 		returns (bytes32);
-
-	function setClientOwner(address _newOwner)
-		public;
 }

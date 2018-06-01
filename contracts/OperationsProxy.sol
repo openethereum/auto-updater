@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.22;
 
 import "./Operations.sol";
 
@@ -22,6 +22,13 @@ import "./Operations.sol";
 /// Specialise proxy wallet. Owner can send transactions unhindered. Delegates
 /// can send only particular transactions to a named Operations contract.
 contract OperationsProxy {
+	event OwnerChanged(address indexed was, address indexed who);
+	event DelegateChanged(address indexed was, address indexed who, uint8 indexed track);
+	event ConfirmerChanged(address indexed was, address indexed who, uint8 indexed track);
+	event NewRequestWaiting(uint8 indexed track, bytes32 hash);
+	event RequestConfirmed(uint8 indexed track, bytes32 hash, bool success);
+	event RequestRejected(uint8 indexed track, bytes32 hash);
+
 	address public owner;
 	mapping(uint8 => address) public delegate;
 	mapping(uint8 => address) public confirmer;
@@ -32,14 +39,22 @@ contract OperationsProxy {
 
 	Operations public operations;
 
-	event OwnerChanged(address indexed was, address indexed who);
-	event DelegateChanged(address indexed was, address indexed who, uint8 indexed track);
-	event ConfirmerChanged(address indexed was, address indexed who, uint8 indexed track);
-	event NewRequestWaiting(uint8 indexed track, bytes32 hash);
-	event RequestConfirmed(uint8 indexed track, bytes32 hash, bool success);
-	event RequestRejected(uint8 indexed track, bytes32 hash);
+	modifier onlyOwner {
+		require(msg.sender == owner);
+		_;
+	}
 
-	function OperationsProxy(
+	modifier onlyDelegateOf(uint8 track) {
+		require(delegate[track] == msg.sender);
+		_;
+	}
+
+	modifier onlyConfirmerOf(uint8 track) {
+		require(confirmer[track] == msg.sender);
+		_;
+	}
+
+	constructor(
 		address _owner,
 		address _stable,
 		address _beta,
@@ -70,7 +85,7 @@ contract OperationsProxy {
 	}
 
 	function setOwner(address _owner)
-		public
+		external
 		onlyOwner
 	{
 		emit OwnerChanged(owner, _owner);
@@ -78,7 +93,7 @@ contract OperationsProxy {
 	}
 
 	function setDelegate(address _delegate, uint8 _track)
-		public
+		external
 		onlyOwner
 	{
 		emit DelegateChanged(delegate[_track], _delegate, _track);
@@ -86,7 +101,7 @@ contract OperationsProxy {
 	}
 
 	function setConfirmer(address _confirmer, uint8 _track)
-		public
+		external
 		onlyOwner
 	{
 		emit ConfirmerChanged(confirmer[_track], _confirmer, _track);
@@ -100,7 +115,7 @@ contract OperationsProxy {
 		uint24 _semver,
 		bool _critical
 	)
-		public
+		external
 		onlyDelegateOf(_track)
 	{
 		bool relayed;
@@ -114,7 +129,7 @@ contract OperationsProxy {
 	}
 
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
-		public
+		external
 	{
 		uint8 track = trackOfPendingRelease[_release];
 		if (track == 0) {
@@ -127,7 +142,7 @@ contract OperationsProxy {
 	}
 
 	function confirm(uint8 _track, bytes32 _hash)
-		public
+		external
 		onlyConfirmerOf(_track)
 	{
 		bytes memory request = waiting[_track][_hash];
@@ -140,7 +155,7 @@ contract OperationsProxy {
 	}
 
 	function reject(uint8 _track, bytes32 _hash)
-		public
+		external
 		onlyConfirmerOf(_track)
 	{
 		delete waiting[_track][_hash];
@@ -188,20 +203,5 @@ contract OperationsProxy {
 
 			o_relayed = false;
 		}
-	}
-
-	modifier onlyOwner {
-		require(msg.sender == owner);
-		_;
-	}
-
-	modifier onlyDelegateOf(uint8 track) {
-		require(delegate[track] == msg.sender);
-		_;
-	}
-
-	modifier onlyConfirmerOf(uint8 track) {
-		require(confirmer[track] == msg.sender);
-		_;
 	}
 }

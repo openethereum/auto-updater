@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.22;
 
 import "./Operations.sol";
 
@@ -46,7 +46,23 @@ contract SimpleOperations is Operations {
 	uint32 public latestFork = 0;
 	address public grandOwner = msg.sender;
 
-	function SimpleOperations()
+	modifier onlyOwner {
+		require(grandOwner == msg.sender);
+		_;
+	}
+
+	modifier onlyClientOwner {
+		bytes32 newClient = clientOwner[msg.sender];
+		require(newClient != 0);
+		_;
+	}
+
+	modifier notClientOwner(address owner) {
+		require(clientOwner[owner] == 0);
+		_;
+	}
+
+	constructor()
 		public
 	{
 		client["parity"] = Client(msg.sender);
@@ -56,7 +72,7 @@ contract SimpleOperations is Operations {
 	// Functions for client owners
 
 	function setClientOwner(address _newOwner)
-		public
+		external
 		onlyClientOwner
 		notClientOwner(_newOwner)
 	{
@@ -79,7 +95,7 @@ contract SimpleOperations is Operations {
 		uint24 _semver,
 		bool _critical
 	)
-		public
+		external
 		onlyClientOwner
 	{
 		require(_track != 0 && _semver != 0);
@@ -107,7 +123,7 @@ contract SimpleOperations is Operations {
 	/// multiple times (with different parameters), therefore the `ChecksumAdded` event can be
 	/// emitted multiple times for the same checksum.
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
-		public
+		external
 		onlyClientOwner
 	{
 		bytes32 newClient = clientOwner[msg.sender];
@@ -125,7 +141,7 @@ contract SimpleOperations is Operations {
 	// Admin functions
 
 	function setClient(bytes32 _client, address _owner)
-		public
+		external
 		onlyOwner
 		notClientOwner(_owner)
 	{
@@ -143,7 +159,7 @@ contract SimpleOperations is Operations {
 	// the data. If a removed client is then re-added (with `setClient`) all of the previous release
 	// and build information is available and returned by the getters.
 	function removeClient(bytes32 _client)
-		public
+		external
 		onlyOwner
 	{
 		address owner = client[_client].owner;
@@ -152,7 +168,7 @@ contract SimpleOperations is Operations {
 	}
 
 	function setLatestFork(uint32 _forkNumber)
-		public
+		external
 		onlyOwner
 	{
 		emit ForkRatified(_forkNumber);
@@ -160,7 +176,7 @@ contract SimpleOperations is Operations {
 	}
 
 	function setOwner(address _newOwner)
-		public
+		external
 		onlyOwner
 	{
 		emit OwnerChanged(grandOwner, _newOwner);
@@ -170,11 +186,79 @@ contract SimpleOperations is Operations {
 	// Getters
 
 	function isLatest(bytes32 _client, bytes32 _release)
-		public
+		external
 		view
 		returns (bool)
 	{
-		return clientExists(_client) && latestInTrack(_client, track(_client, _release)) == _release;
+		return clientExists(_client) &&
+			latestInTrack(_client, track(_client, _release)) == _release;
+	}
+
+	function build(bytes32 _client, bytes32 _checksum)
+		external
+		view
+		returns (bytes32 o_release, bytes32 o_platform)
+	{
+		if (clientExists(_client)) {
+			Build storage b = client[_client].build[_checksum];
+			o_release = b.release;
+			o_platform = b.platform;
+		} else {
+			o_release = bytes32(0);
+			o_platform = bytes32(0);
+		}
+	}
+
+	function release(bytes32 _client, bytes32 _release)
+		external
+		view
+		returns (
+			uint32 o_forkBlock,
+			uint8 o_track,
+			uint24 o_semver,
+			bool o_critical
+		)
+	{
+		if (clientExists(_client)) {
+			Release storage r = client[_client].release[_release];
+			o_forkBlock = r.forkBlock;
+			o_track = r.track;
+			o_semver = r.semver;
+			o_critical = r.critical;
+		} else {
+			o_forkBlock = 0;
+			o_track = 0;
+			o_semver = 0;
+			o_critical = false;
+		}
+	}
+
+	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform)
+		external
+		view
+		returns (bytes32)
+	{
+		if (clientExists(_client)) {
+			return client[_client].release[_release].checksum[_platform];
+		} else {
+			return bytes32(0);
+		}
+	}
+
+	function latestFork()
+		external
+		view
+		returns (uint32)
+	{
+		return latestFork;
+	}
+
+	function clientOwner(address _owner)
+		external
+		view
+		returns (bytes32)
+	{
+		return clientOwner[_owner];
 	}
 
 	function track(bytes32 _client, bytes32 _release)
@@ -201,73 +285,6 @@ contract SimpleOperations is Operations {
 		}
 	}
 
-	function build(bytes32 _client, bytes32 _checksum)
-		public
-		view
-		returns (bytes32 o_release, bytes32 o_platform)
-	{
-		if (clientExists(_client)) {
-			Build storage b = client[_client].build[_checksum];
-			o_release = b.release;
-			o_platform = b.platform;
-		} else {
-			o_release = bytes32(0);
-			o_platform = bytes32(0);
-		}
-	}
-
-	function release(bytes32 _client, bytes32 _release)
-		public
-		view
-		returns (
-			uint32 o_forkBlock,
-			uint8 o_track,
-			uint24 o_semver,
-			bool o_critical
-		)
-	{
-		if (clientExists(_client)) {
-			Release storage r = client[_client].release[_release];
-			o_forkBlock = r.forkBlock;
-			o_track = r.track;
-			o_semver = r.semver;
-			o_critical = r.critical;
-		} else {
-			o_forkBlock = 0;
-			o_track = 0;
-			o_semver = 0;
-			o_critical = false;
-		}
-	}
-
-	function checksum(bytes32 _client, bytes32 _release, bytes32 _platform)
-		public
-		view
-		returns (bytes32)
-	{
-		if (clientExists(_client)) {
-			return client[_client].release[_release].checksum[_platform];
-		} else {
-			return bytes32(0);
-		}
-	}
-
-	function latestFork()
-		public
-		view
-		returns (uint32)
-	{
-		return latestFork;
-	}
-
-	function clientOwner(address _owner)
-		public
-		view
-		returns (bytes32)
-	{
-		return clientOwner[_owner];
-	}
-
 	// Internals
 
 	function clientExists(bytes32 _client)
@@ -285,23 +302,5 @@ contract SimpleOperations is Operations {
 	{
 		Release storage r = client[_client].release[_release];
 		return clientExists(_client) && r.track != 0 && r.semver != 0;
-	}
-
-	// Modifiers
-
-	modifier onlyOwner {
-		require(grandOwner == msg.sender);
-		_;
-	}
-
-	modifier onlyClientOwner {
-		bytes32 newClient = clientOwner[msg.sender];
-		require(newClient != 0);
-		_;
-	}
-
-	modifier notClientOwner(address owner) {
-		require(clientOwner[owner] == 0);
-		_;
 	}
 }
