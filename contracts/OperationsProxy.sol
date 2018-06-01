@@ -85,7 +85,7 @@ contract OperationsProxy {
 	}
 
 	function setOwner(address _owner)
-		public
+		external
 		onlyOwner
 	{
 		emit OwnerChanged(owner, _owner);
@@ -93,7 +93,7 @@ contract OperationsProxy {
 	}
 
 	function setDelegate(address _delegate, uint8 _track)
-		public
+		external
 		onlyOwner
 	{
 		emit DelegateChanged(delegate[_track], _delegate, _track);
@@ -101,7 +101,7 @@ contract OperationsProxy {
 	}
 
 	function setConfirmer(address _confirmer, uint8 _track)
-		public
+		external
 		onlyOwner
 	{
 		emit ConfirmerChanged(confirmer[_track], _confirmer, _track);
@@ -115,7 +115,7 @@ contract OperationsProxy {
 		uint24 _semver,
 		bool _critical
 	)
-		public
+		external
 		onlyDelegateOf(_track)
 	{
 		bool relayed;
@@ -129,7 +129,7 @@ contract OperationsProxy {
 	}
 
 	function addChecksum(bytes32 _release, bytes32 _platform, bytes32 _checksum)
-		public
+		external
 	{
 		uint8 track = trackOfPendingRelease[_release];
 		if (track == 0) {
@@ -142,7 +142,7 @@ contract OperationsProxy {
 	}
 
 	function confirm(uint8 _track, bytes32 _hash)
-		public
+		external
 		onlyConfirmerOf(_track)
 	{
 		bytes memory request = waiting[_track][_hash];
@@ -155,7 +155,7 @@ contract OperationsProxy {
 	}
 
 	function reject(uint8 _track, bytes32 _hash)
-		public
+		external
 		onlyConfirmerOf(_track)
 	{
 		delete waiting[_track][_hash];
