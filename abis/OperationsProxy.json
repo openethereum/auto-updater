@@ -1,0 +1,428 @@
+[
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "trackOfPendingRelease",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "pendingRelease",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      },
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "waiting",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "name": "delegate",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "operations",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "name": "confirmer",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "name": "_stable",
+        "type": "address"
+      },
+      {
+        "name": "_beta",
+        "type": "address"
+      },
+      {
+        "name": "_nightly",
+        "type": "address"
+      },
+      {
+        "name": "_stableConfirmer",
+        "type": "address"
+      },
+      {
+        "name": "_betaConfirmer",
+        "type": "address"
+      },
+      {
+        "name": "_nightlyConfirmer",
+        "type": "address"
+      },
+      {
+        "name": "_operations",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "fallback"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "was",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "who",
+        "type": "address"
+      }
+    ],
+    "name": "OwnerChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "was",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "who",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "track",
+        "type": "uint8"
+      }
+    ],
+    "name": "DelegateChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "was",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "who",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "track",
+        "type": "uint8"
+      }
+    ],
+    "name": "ConfirmerChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "track",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "name": "hash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "NewRequestWaiting",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "track",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "name": "hash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "name": "RequestConfirmed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "track",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "name": "hash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "RequestRejected",
+    "type": "event"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_owner",
+        "type": "address"
+      }
+    ],
+    "name": "setOwner",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_delegate",
+        "type": "address"
+      },
+      {
+        "name": "_track",
+        "type": "uint8"
+      }
+    ],
+    "name": "setDelegate",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_confirmer",
+        "type": "address"
+      },
+      {
+        "name": "_track",
+        "type": "uint8"
+      }
+    ],
+    "name": "setConfirmer",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_release",
+        "type": "bytes32"
+      },
+      {
+        "name": "_forkBlock",
+        "type": "uint32"
+      },
+      {
+        "name": "_track",
+        "type": "uint8"
+      },
+      {
+        "name": "_semver",
+        "type": "uint24"
+      },
+      {
+        "name": "_critical",
+        "type": "bool"
+      }
+    ],
+    "name": "addRelease",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_release",
+        "type": "bytes32"
+      },
+      {
+        "name": "_platform",
+        "type": "bytes32"
+      },
+      {
+        "name": "_checksum",
+        "type": "bytes32"
+      }
+    ],
+    "name": "addChecksum",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_track",
+        "type": "uint8"
+      },
+      {
+        "name": "_hash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "confirm",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_track",
+        "type": "uint8"
+      },
+      {
+        "name": "_hash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "reject",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

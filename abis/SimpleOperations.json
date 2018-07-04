@@ -1,0 +1,451 @@
+[
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "client",
+    "outputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "grandOwner",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "client",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "forkBlock",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "name": "release",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "track",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "name": "semver",
+        "type": "uint24"
+      },
+      {
+        "indexed": true,
+        "name": "critical",
+        "type": "bool"
+      }
+    ],
+    "name": "ReleaseAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "client",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "release",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "platform",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "checksum",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ChecksumAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "forkNumber",
+        "type": "uint32"
+      }
+    ],
+    "name": "ForkRatified",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "old",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "now",
+        "type": "address"
+      }
+    ],
+    "name": "OwnerChanged",
+    "type": "event"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "setClientOwner",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_release",
+        "type": "bytes32"
+      },
+      {
+        "name": "_forkBlock",
+        "type": "uint32"
+      },
+      {
+        "name": "_track",
+        "type": "uint8"
+      },
+      {
+        "name": "_semver",
+        "type": "uint24"
+      },
+      {
+        "name": "_critical",
+        "type": "bool"
+      }
+    ],
+    "name": "addRelease",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_release",
+        "type": "bytes32"
+      },
+      {
+        "name": "_platform",
+        "type": "bytes32"
+      },
+      {
+        "name": "_checksum",
+        "type": "bytes32"
+      }
+    ],
+    "name": "addChecksum",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_client",
+        "type": "bytes32"
+      },
+      {
+        "name": "_owner",
+        "type": "address"
+      }
+    ],
+    "name": "setClient",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_client",
+        "type": "bytes32"
+      }
+    ],
+    "name": "removeClient",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_forkNumber",
+        "type": "uint32"
+      }
+    ],
+    "name": "setLatestFork",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "setOwner",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_client",
+        "type": "bytes32"
+      },
+      {
+        "name": "_release",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isLatest",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_client",
+        "type": "bytes32"
+      },
+      {
+        "name": "_release",
+        "type": "bytes32"
+      }
+    ],
+    "name": "track",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_client",
+        "type": "bytes32"
+      },
+      {
+        "name": "_track",
+        "type": "uint8"
+      }
+    ],
+    "name": "latestInTrack",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_client",
+        "type": "bytes32"
+      },
+      {
+        "name": "_checksum",
+        "type": "bytes32"
+      }
+    ],
+    "name": "build",
+    "outputs": [
+      {
+        "name": "o_release",
+        "type": "bytes32"
+      },
+      {
+        "name": "o_platform",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_client",
+        "type": "bytes32"
+      },
+      {
+        "name": "_release",
+        "type": "bytes32"
+      }
+    ],
+    "name": "release",
+    "outputs": [
+      {
+        "name": "o_forkBlock",
+        "type": "uint32"
+      },
+      {
+        "name": "o_track",
+        "type": "uint8"
+      },
+      {
+        "name": "o_semver",
+        "type": "uint24"
+      },
+      {
+        "name": "o_critical",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_client",
+        "type": "bytes32"
+      },
+      {
+        "name": "_release",
+        "type": "bytes32"
+      },
+      {
+        "name": "_platform",
+        "type": "bytes32"
+      }
+    ],
+    "name": "checksum",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "latestFork",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_owner",
+        "type": "address"
+      }
+    ],
+    "name": "clientOwner",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
